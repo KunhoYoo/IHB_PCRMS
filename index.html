@@ -617,6 +617,68 @@ html[data-theme="dark"] .copy-pill:hover {
   .ai-panel{left:6px;right:6px;bottom:72px;height:72dvh}
 }
 
+
+
+/* Mobile UX redesign */
+@media(max-width:768px){
+  #app{background:var(--bg)}
+  .auth-user{max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .db-hdr{padding:16px 0 10px;gap:12px}
+  .db-title-row{width:100%;justify-content:flex-start}
+  .pg-title{font-size:20px;line-height:1.25}
+  .pg-sub{font-size:10.5px;background:transparent;padding:0;color:var(--sub);font-weight:700}
+  .db-actions{display:grid!important;grid-template-columns:92px 1fr!important;gap:8px!important;width:100%}
+  .db-actions .btn{height:42px;min-height:42px;border-radius:12px;font-weight:800}
+  .db-actions .btn-ghost{background:var(--card);border:1px solid var(--border);color:var(--text);box-shadow:var(--sh-sm)}
+  .db-actions .btn-primary{box-shadow:0 8px 20px rgba(49,130,246,.22)}
+
+  .sum-grid{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:7px!important;margin:4px 0 12px!important}
+  .sum-card{padding:12px 9px 10px!important;border-radius:14px!important;min-height:78px}
+  .sum-card::before{height:2px}
+  .sum-lbl{font-size:10px;letter-spacing:0;margin-bottom:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .sum-val{font-size:22px!important;letter-spacing:-.5px}
+  .sum-val span{font-size:12px!important}
+  .sum-sub{display:none}
+
+  .act-row{background:var(--card);border:1px solid var(--border);border-radius:16px;box-shadow:var(--sh-sm);padding:10px;gap:8px;margin-bottom:12px}
+  .srch-wrap .inp{height:42px;border-radius:12px;background:var(--g50);border-color:transparent}
+  .act-r{display:grid!important;grid-template-columns:1fr 1fr!important;width:100%;gap:8px!important;margin:0!important}
+  .act-r .btn{background:var(--g50);border:1px solid var(--border);color:var(--sub);height:38px;min-height:38px;border-radius:11px;font-weight:800}
+  .res-ct{margin:14px 2px 8px;font-size:11px;font-weight:800;color:var(--sub)}
+
+  #log-tbl.tbl-wrap{background:transparent;border:0;box-shadow:none;overflow:visible}
+  .mobile-log-list{display:flex;flex-direction:column;gap:10px}
+  .m-log-card{background:var(--card);border:1px solid var(--border);border-radius:18px;box-shadow:var(--sh-sm);padding:14px;cursor:pointer}
+  .m-log-top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;color:var(--sub);font-size:11px;font-weight:800}
+  .m-log-no{color:var(--blue);background:var(--blue-light);border-radius:999px;padding:4px 8px}
+  .m-log-time{white-space:nowrap}
+  .m-log-title{font-size:15px;font-weight:900;line-height:1.45;margin-bottom:11px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .m-log-meta{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+  .m-log-field{min-width:0}
+  .m-log-label{font-size:10px;font-weight:800;color:var(--sub);margin-bottom:3px}
+  .m-log-value{font-size:12px;font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .m-log-actions{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px;border-top:1px solid var(--border);padding-top:11px}
+  .m-log-actions .btn{height:36px;min-height:36px;border-radius:11px;padding:0;font-size:12px}
+  .m-log-actions .btn-ghost{background:var(--g50);color:var(--text)}
+  .m-log-actions .btn-secondary{background:var(--blue-light)}
+  .m-log-actions .btn-danger{background:#FDE2E2}
+  [data-theme=dark] .m-log-actions .btn-danger{background:#5B1F24}
+
+  .pagi{padding:12px 0 4px;justify-content:center}
+  .ai-fab{right:16px!important;bottom:calc(84px + env(safe-area-inset-bottom))!important;width:50px!important;height:50px!important;box-shadow:0 10px 24px rgba(49,130,246,.34)}
+}
+
+@media(max-width:420px){
+  .db-actions{grid-template-columns:88px 1fr!important}
+  .act-r{grid-template-columns:1fr 1fr!important}
+  .sum-grid{grid-template-columns:repeat(3,minmax(0,1fr))!important}
+  .sum-card{padding-left:7px!important;padding-right:7px!important}
+  .sum-lbl{font-size:9.5px}
+  .sum-val{font-size:20px!important}
+  .m-log-meta{grid-template-columns:1fr}
+  .m-log-actions{grid-template-columns:1fr 1fr 1fr!important}
+}
+
 </style>
 </head>
 <body>
@@ -1803,6 +1865,16 @@ window.addEventListener('beforeunload', e => {
   if (S.view === 'edit') { e.preventDefault(); e.returnValue = ''; }
 });
 
+
+let dashMobileState = window.matchMedia('(max-width:768px)').matches;
+window.addEventListener('resize', () => {
+  const next = window.matchMedia('(max-width:768px)').matches;
+  if(next !== dashMobileState){
+    dashMobileState = next;
+    if(S.view === 'dash') renderDash();
+  }
+});
+
 function getFiltered(){
   const q=S.q.toLowerCase().trim();
   return S.logs.filter(l=>!l.deleted).filter(l=>!q||(l.co||'').toLowerCase().includes(q)||(l.ttl||'').toLowerCase().includes(q)||(l.mgr||'').toLowerCase().includes(q))
@@ -1810,48 +1882,74 @@ function getFiltered(){
 }
 
 function renderDash(){
-  const dt=getTodayKr(); document.getElementById('today-lbl').textContent=dt; document.getElementById('hdr-date').textContent=dt;
+  const dt=getTodayKr();
+  document.getElementById('today-lbl').textContent=dt;
+  document.getElementById('hdr-date').textContent=dt;
   const all=S.logs.filter(l=>!l.deleted);
   const td=all.filter(l=>l.date===today());
   const mo=all.filter(l=>l.date&&l.date.startsWith(today().slice(0,7)));
 
   document.getElementById('sum-cards').innerHTML=`
     <div class="sum-card c-blue"><div class="sum-lbl">오늘 접수</div><div class="sum-val">${td.length}<span>건</span></div><div class="sum-sub">${today()} 기준</div></div>
-    <div class="sum-card c-orange"><div class="sum-lbl">이번 달 총계</div><div class="sum-val">${mo.length}<span>건</span></div><div class="sum-sub">${today().slice(0,7)} 기준</div></div>
+    <div class="sum-card c-orange"><div class="sum-lbl">이번 달</div><div class="sum-val">${mo.length}<span>건</span></div><div class="sum-sub">${today().slice(0,7)} 기준</div></div>
     <div class="sum-card c-green"><div class="sum-lbl">전체 누적</div><div class="sum-val">${all.length}<span>건</span></div><div class="sum-sub">전체 기간</div></div>`;
 
   const fl=getFiltered();
-  const tp=Math.max(1,Math.ceil(fl.length/S.ps)); if(S.page>tp) S.page=tp;
-  const st=(S.page-1)*S.ps; const pg=fl.slice(st, st+S.ps);
-  document.getElementById('res-ct').textContent = S.q?`"${S.q}" 검색 결과: ${fl.length}건`:`전체 ${fl.length}건`;
+  const tp=Math.max(1,Math.ceil(fl.length/S.ps));
+  if(S.page>tp) S.page=tp;
+  const st=(S.page-1)*S.ps;
+  const pg=fl.slice(st, st+S.ps);
+  document.getElementById('res-ct').textContent = S.q?`"${S.q}" 검색 결과 ${fl.length}건`:`전체 ${fl.length}건`;
 
-	const tbl=document.getElementById('log-tbl');
-	  if(!pg.length){
-		tbl.innerHTML=`<div class="empty"><div class="empty-ico">📋</div><div class="empty-t">${S.q?'검색 결과가 없습니다':'등록된 CS 로그가 없습니다'}</div><div style="margin-top:10px">${S.q?`<button class="btn btn-ghost btn-sm" onclick="doSearch('')">검색 초기화</button>`:`<button class="btn btn-primary btn-sm" onclick="goEditor(null)">첫 번째 로그 작성</button>`}</div></div>`;
-	  } else {
-		// [Req 3] 테이블 열 너비 조정 적용
-		tbl.innerHTML=`<table>
-		  <thead><tr>
-			<th style="width:50px; text-align:center; text-transform: none;">No.</th>
-			<th style="width:160px">일시</th>
-			<th style="width:160px">고객사</th>
-			<th style="width:400px; resize: horizontal; overflow: hidden;">제목</th> <th style="width:150px">담당자</th> <th style="width:150px; text-align:right;"></th> </tr></thead>
-		  <tbody>
-		  ${pg.map((l,i)=>`<tr onclick="goDet('${l.id}')">
-			<td class="td-no" data-label="No.">${fl.length-st-i}</td>
-			<td data-label="일시" style="font-size:13px">${l.date||''} <span style="color:var(--sub)">${l.time||''}</span></td> <td class="td-co" data-label="고객사"><span class="badge badge-b">${esc(l.co||'-')}</span></td>
-			<td data-label="제목"><span class="ttl-txt">${esc(l.ttl||'(제목 없음)')}</span></td>
-			<td data-label="담당자">${esc(l.mgr||'-')}</td>
-			<td class="td-actions" data-label="관리" style="text-align:right" onclick="event.stopPropagation()">
-			  <div style="display:flex;gap:4px;justify-content:flex-end">
-				<button class="btn btn-ghost btn-sm" onclick="goDet('${l.id}')">보기</button>
-				<button class="btn btn-secondary btn-sm" onclick="goEditor('${l.id}')">수정</button>
-				<button class="btn btn-danger btn-sm" onclick="askDel('${l.id}')">삭제</button>
-			  </div>
-			</td>
-		  </tr>`).join('')}
-		  </tbody></table>`;
-	  }
+  const tbl=document.getElementById('log-tbl');
+  if(!pg.length){
+    tbl.innerHTML=`<div class="empty"><div class="empty-ico">📋</div><div class="empty-t">${S.q?'검색 결과가 없습니다':'등록된 CS 로그가 없습니다'}</div><div style="margin-top:10px">${S.q?`<button class="btn btn-ghost btn-sm" onclick="doSearch('')">검색 초기화</button>`:`<button class="btn btn-primary btn-sm" onclick="goEditor(null)">첫 번째 로그 작성</button>`}</div></div>`;
+  } else if(window.matchMedia('(max-width:768px)').matches){
+    tbl.innerHTML=`<div class="mobile-log-list">
+      ${pg.map((l,i)=>`<article class="m-log-card" onclick="goDet('${l.id}')">
+        <div class="m-log-top">
+          <span class="m-log-no">#${fl.length-st-i}</span>
+          <span class="m-log-time">${l.date||'-'} ${l.time||''}</span>
+        </div>
+        <div class="m-log-title">${esc(l.ttl||'(제목 없음)')}</div>
+        <div class="m-log-meta">
+          <div class="m-log-field"><div class="m-log-label">고객사</div><div class="m-log-value"><span class="badge badge-b">${esc(l.co||'-')}</span></div></div>
+          <div class="m-log-field"><div class="m-log-label">담당자</div><div class="m-log-value">${esc(l.mgr||'-')}</div></div>
+        </div>
+        <div class="m-log-actions" onclick="event.stopPropagation()">
+          <button class="btn btn-ghost btn-sm" onclick="goDet('${l.id}')">보기</button>
+          <button class="btn btn-secondary btn-sm" onclick="goEditor('${l.id}')">수정</button>
+          <button class="btn btn-danger btn-sm" onclick="askDel('${l.id}')">삭제</button>
+        </div>
+      </article>`).join('')}
+    </div>`;
+  } else {
+    tbl.innerHTML=`<table>
+      <thead><tr>
+        <th style="width:50px;text-align:center;text-transform:none;">No.</th>
+        <th style="width:160px">일시</th>
+        <th style="width:160px">고객사</th>
+        <th style="width:400px;resize:horizontal;overflow:hidden;">제목</th>
+        <th style="width:150px">담당자</th>
+        <th style="width:150px;text-align:right;"></th>
+      </tr></thead>
+      <tbody>
+      ${pg.map((l,i)=>`<tr onclick="goDet('${l.id}')">
+        <td class="td-no">${fl.length-st-i}</td>
+        <td style="font-size:13px">${l.date||''} <span style="color:var(--sub)">${l.time||''}</span></td>
+        <td class="td-co"><span class="badge badge-b">${esc(l.co||'-')}</span></td>
+        <td><span class="ttl-txt">${esc(l.ttl||'(제목 없음)')}</span></td>
+        <td>${esc(l.mgr||'-')}</td>
+        <td style="text-align:right" onclick="event.stopPropagation()">
+          <div style="display:flex;gap:4px;justify-content:flex-end">
+            <button class="btn btn-ghost btn-sm" onclick="goDet('${l.id}')">보기</button>
+            <button class="btn btn-secondary btn-sm" onclick="goEditor('${l.id}')">수정</button>
+            <button class="btn btn-danger btn-sm" onclick="askDel('${l.id}')">삭제</button>
+          </div>
+        </td>
+      </tr>`).join('')}
+      </tbody></table>`;
+  }
   renderPagi(tp);
 }
 
