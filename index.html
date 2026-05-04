@@ -1,0 +1,2383 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CS 운영 로그 시스템</title>
+<link href="https://hangeul.pstatic.net/hangeul_static/css/nanum-barun-gothic.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css" id="hljs-theme">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-storage-compat.js"></script>
+<style>
+:root {
+  --blue:#3182F6; --blue-h:#1B64DA; --blue-light:#EFF6FF; --blue-mid:#DBEAFE;
+  --g50:#F9FAFB; --g100:#F2F4F6; --g200:#E5E8EB; --g300:#D1D6DB;
+  --g400:#ADB5BD; --g500:#868E96; --g600:#495057; --g700:#343A40; --g900:#111827;
+  --bg:#F9FAFB; --card:#FFFFFF; --text:#111827; --sub:#6B7280; --border:#E5E8EB;
+  --focus:#3182F6;
+  --sh-sm:0 1px 3px rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.04);
+  --sh-md:0 4px 16px rgba(0,0,0,.08); --sh-lg:0 8px 32px rgba(0,0,0,.12);
+  --r8:8px; --r12:12px; --r16:16px; --r24:24px;
+  --hh:64px;
+}
+[data-theme=dark]{
+  --bg:#0F1117; --card:#1A1D23; --text:#F1F3F5; --sub:#9CA3AF; --border:#2C2F36;
+  --focus:#60A5FA; --blue-light:#1E3A5F; --blue-mid:#1E3A5F;
+  --g50:#13161C; --g100:#1E2128; --g200:#2C2F36;
+  --sh-sm:0 1px 3px rgba(0,0,0,.3); --sh-md:0 4px 16px rgba(0,0,0,.35);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+
+/* [Req 2] 폰트 전체 통일 */
+body { font-family: 'NanumBarunGothic', sans-serif !important; background: var(--bg); color: var(--text); font-size: 14px; line-height: 1.6; min-height: 100vh; transition: background .2s, color .2s; }
+
+/* ── Header ── */
+#hdr{position:fixed;top:0;left:0;right:0;height:var(--hh);background:var(--card);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 32px;z-index:100;box-shadow:var(--sh-sm)}
+.logo-wrap{display:flex;align-items:center;gap:10px; cursor:pointer;} /* [Req 1] 커서 포인터 추가 */
+.logo-icon{width:34px;height:34px;background:var(--blue);border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.logo-text{font-size:15px;font-weight:700;letter-spacing:-.3px}
+.logo-sub{font-size:11px;color:var(--sub)}
+.hdr-r{display:flex;align-items:center;gap:10px}
+#dark-btn,#feature-btn{width:36px;height:36px;border-radius:50%;background:var(--g100);border:1px solid var(--border);cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--text);transition:background .2s,transform .15s}
+#dark-btn:hover,#feature-btn:hover{background:var(--g200);transform:translateY(-1px)}
+#hdr-date{font-size:12px;color:var(--sub)}
+
+/* ── Layout ── */
+#app{padding-top:var(--hh);max-width:1380px;margin:0 auto;padding-left:32px;padding-right:32px;padding-bottom:56px}
+.view{display:none}.view.active{display:block;animation:fi .2s ease}
+@keyframes fi{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── Buttons & Inputs ── */
+.btn { display:inline-flex; align-items:center; gap:6px; padding:9px 18px; border-radius:var(--r12); font-size:14px; font-weight:600; cursor:pointer; border:none; transition:all .15s; font-family: 'NanumBarunGothic', sans-serif !important; white-space:nowrap; text-decoration:none; }
+.btn-primary{background:var(--blue);color:#fff}.btn-primary:hover{background:var(--blue-h);transform:translateY(-1px);box-shadow:0 4px 14px rgba(49,130,246,.4)}
+.btn-secondary{background:var(--blue-light);color:var(--blue)}.btn-secondary:hover{background:var(--blue-mid)}
+.btn-ghost{background:transparent;color:var(--sub)}.btn-ghost:hover{background:var(--g100);color:var(--text)}
+.btn-danger{background:#FEE2E2;color:#DC2626}.btn-danger:hover{background:#FECACA}
+[data-theme=dark] .btn-danger{background:#5B1F24;color:#FCA5A5}
+[data-theme=dark] .btn-danger:hover{background:#7F1D1D;color:#FECACA}
+.btn-sm{padding:6px 12px;font-size:12px;border-radius:var(--r8)}
+.btn-icon{padding:7px}
+
+.inp { width:100%; padding:10px 14px; border:1.5px solid var(--border); border-radius:var(--r12); font-size:14px; background:var(--card); color:var(--text); transition:border-color .15s,box-shadow .15s; font-family: 'NanumBarunGothic', sans-serif !important; outline:none; }
+.inp:focus{border-color:var(--focus);box-shadow:0 0 0 3px rgba(49,130,246,.12)}
+.inp::placeholder{color:var(--g400)}
+textarea.inp{resize:vertical;min-height:90px;line-height:1.7}
+.fg{display:flex;flex-direction:column;gap:6px}
+.lbl{font-size:12px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:.4px}
+.lbl.req::after{content:' *';color:#EF4444}
+
+.inline-code {
+  background: #1A1F2E;
+  color: #E2E8F0;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-family: 'Fira Code','Consolas', monospace;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all .15s;
+}
+
+[data-theme="dark"] .inline-code {
+  background: #1E3A5F;   /* 살짝 파란톤 */
+  color: #93C5FD;        /* 파란 텍스트 */
+  border: 1px solid #3B82F6;
+}
+
+.inline-code:hover {
+  background: #2A3145;
+}
+
+[data-theme="dark"] .inline-code:hover {
+  background: #4B5563;
+}
+
+.inline-code.copied {
+  background: #10B981;
+  color: #fff;
+}
+
+/* ── Card ── */
+.card{background:var(--card);border-radius:var(--r16);border:1px solid var(--border);box-shadow:var(--sh-sm);padding:24px}
+
+/* ── Dashboard ── */
+.db-hdr{padding:22px 0 12px;display:flex;justify-content:space-between;align-items:center;gap:14px}
+.db-title-wrap{min-width:0}
+.db-title-row{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.db-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.pg-title{font-size:22px;font-weight:800;letter-spacing:-.5px}
+.pg-sub{font-size:12px;color:var(--sub);margin-top:0;padding:3px 8px;border-radius:999px;background:var(--g100);font-weight:700}
+.sum-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:20px}
+.sum-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r16);padding:22px;position:relative;overflow:hidden;box-shadow:var(--sh-sm)}
+.sum-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;border-radius:99px}
+.sum-card.c-blue::before{background:var(--blue)}
+.sum-card.c-orange::before{background:#F97316}
+.sum-card.c-green::before{background:#10B981}
+.sum-lbl{font-size:11px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.sum-val{font-size:34px;font-weight:800;letter-spacing:-1px;line-height:1.1}
+.sum-val span{font-size:18px;font-weight:600}
+.sum-sub{font-size:11px;color:var(--sub);margin-top:3px}
+
+/* ── Search & Actions ── */
+.act-row{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+/* [Req 5] 검색란 너비 확장 */
+.srch-wrap{flex:1;position:relative}
+.srch-wrap .inp{padding-left:44px;height:46px;font-size:14px;border-radius:var(--r12)}
+.srch-ico{position:absolute;left:15px;top:50%;transform:translateY(-50%);color:var(--g400);pointer-events:none}
+.act-r{margin-left:auto;display:flex;gap:6px}
+
+/* ── Table (Req 3: 열너비 조정) ── */
+.tbl-wrap{background:var(--card);border:1px solid var(--border);border-radius:var(--r16);overflow:hidden;box-shadow:var(--sh-sm)}
+.res-ct{font-size:12px;color:var(--sub);margin-bottom:10px}
+/* table-layout: fixed 설정으로 너비 강제 */
+table{width:100%;border-collapse:collapse; table-layout: fixed;}
+thead th{padding:12px 16px;text-align:left;font-size:12px;font-weight:700;color:var(--sub);background:var(--g50);border-bottom:1px solid var(--border);text-transform:uppercase;letter-spacing:.4px;white-space:nowrap;}
+tbody tr{border-bottom:1px solid var(--border);cursor:pointer;transition:background .1s}
+tbody tr:last-child{border-bottom:none}
+tbody tr:hover{background:var(--g50)}
+tbody td{padding:12px 16px;font-size:14px;vertical-align:middle; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+.td-no{color:var(--sub);font-size:12px;text-align:center;}
+.td-co{font-weight:600}
+.ttl-txt{white-space:nowrap;overflow:hidden;text-overflow:ellipsis; display:block; max-width:100%;}
+.badge{display:inline-flex;align-items:center;padding:3px 10px;border-radius:99px;font-size:11px;font-weight:600}
+.badge-b{background:var(--blue-light);color:var(--blue)}
+
+/* ── Pagination ── */
+.pagi{display:flex;align-items:center;justify-content:center;gap:4px;padding:18px 0}
+.pg-btn{width:34px;height:34px;border-radius:var(--r8);border:1px solid var(--border);background:var(--card);color:var(--text);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:500;transition:all .15s;font-family:inherit}
+.pg-btn:hover:not(:disabled){border-color:var(--blue);color:var(--blue)}
+.pg-btn.act{background:var(--blue);color:#fff;border-color:var(--blue)}
+.pg-btn:disabled{opacity:.35;cursor:not-allowed}
+
+/* ── Editor ── */
+.ed-wrap{max-width:960px;margin:0 auto;padding:28px 0}
+.ed-topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;gap:12px}
+.meta-grid{display:grid;gap:14px}
+.meta-grid.g3{grid-template-columns:1fr 1fr 1fr}
+.meta-grid.g2{grid-template-columns:1fr 1fr}
+
+/* [Req 6] 에디터 레이아웃 (리모컨 사이드바) */
+.ed-layout { display: flex; gap: 20px; align-items: flex-start; position: relative; }
+.ed-main { flex: 1; min-width: 0; }
+.ed-side { width: 150px; flex-shrink: 0; position: sticky; top: 84px; display: flex; flex-direction: column; gap: 8px; background: var(--card); padding: 16px; border-radius: var(--r16); border: 1px solid var(--border); box-shadow: var(--sh-sm); }
+.ed-side-lbl { font-size: 11px; font-weight: 700; color: var(--sub); text-align: center; margin-bottom: 4px; letter-spacing: 0.5px; }
+
+/* ── Block Editor ── */
+.blk{position:relative;margin-bottom:14px}
+.blk-tb{position:absolute;top:8px;right:8px;display:flex;gap:3px;opacity:0;transition:opacity .15s;z-index:2}
+.blk:hover .blk-tb{opacity:1}
+.sql-blk{border:1.5px solid var(--border);border-radius:var(--r12);overflow:hidden}
+.sql-hdr{background:#1E2432;padding:9px 14px;display:flex;align-items:center;justify-content:space-between}
+.dots{display:flex;gap:5px}.dot{width:10px;height:10px;border-radius:50%}
+.dot-r{background:#FF5F57}.dot-y{background:#FEBC2E}.dot-g{background:#28C840}
+.sql-lbl{font-size:11px;color:#9CA3AF;font-weight:700;letter-spacing:.5px}
+.sql-ta{background:#263247!important;color:#F8FAFC!important;border:none!important;border-radius:0!important;font-family:'Fira Code','Consolas',monospace!important;font-size:13px!important;line-height:1.65!important;min-height:110px;resize:vertical;padding:14px!important;box-shadow:none!important;outline:none!important}
+.img-blk{border:1.5px solid var(--border);border-radius:var(--r12);overflow:hidden; text-align:center; background:var(--g50);}
+.img-blk img{max-width:100%; display:inline-block; border-radius:10px; margin:0 auto;}
+.drop-zone{border:2px dashed var(--border);border-radius:var(--r12);padding:28px;text-align:center;color:var(--sub);cursor:pointer;transition:all .2s;margin-top:10px;background:var(--card)}
+.drop-zone:hover,.drop-zone.dov{border-color:var(--blue);background:var(--blue-light);color:var(--blue)}
+.drop-zone-ico{font-size:26px;margin-bottom:6px}
+
+/* ── Copy SQL button ── */
+.copy-sql-btn{padding:5px 10px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:6px;color:#9CA3AF;font-size:11px;cursor:pointer;display:flex;align-items:center;gap:4px;transition:all .15s;}
+.copy-sql-btn:hover{background:rgba(255,255,255,.18);color:#fff}
+.copy-sql-btn.copied{background:rgba(16,185,129,.2)!important;color:#10B981!important;border-color:#10B981!important}
+.sql-preview{position:relative}
+.sql-preview pre{margin:0;border-radius:0!important;font-size:13px;max-height:380px;overflow:auto;background:#263247!important}
+.sql-preview pre code{background:transparent!important;color:#F8FAFC!important;padding:14px 16px!important;display:block; font-family:'Fira Code','Consolas',monospace!important;}
+.sql-preview .hljs{color:#F8FAFC!important;background:#263247!important}
+.sql-preview .hljs-keyword,.sql-preview .hljs-built_in{color:#93C5FD!important}
+.sql-preview .hljs-string,.sql-preview .hljs-symbol{color:#BBF7D0!important}
+.sql-preview .hljs-number,.sql-preview .hljs-literal{color:#FDE68A!important}
+.sql-preview .hljs-comment{color:#CBD5E1!important}
+
+/* ── Detail ── */
+.det-wrap{max-width:840px;margin:0 auto;padding:28px 0}
+.det-hdr{background:var(--card);border:1px solid var(--border);border-radius:var(--r16);padding:26px 28px;margin-bottom:16px;box-shadow:var(--sh-sm)}
+.det-title{font-size:24px;font-weight:800;letter-spacing:-.5px;margin-bottom:14px}
+.det-meta{display:flex;gap:20px;flex-wrap:wrap;font-size:13px;color:var(--sub)}
+.det-mi{display:flex;align-items:center;gap:5px}
+.det-mi strong{color:var(--text)}
+.det-blk{margin-bottom:14px}
+.det-txt{background:var(--card);border:1px solid var(--border);border-radius:var(--r12);padding:18px 20px;line-height:1.85;white-space:pre-wrap;box-shadow:var(--sh-sm)}
+
+/* ── Autocomplete ── */
+.ac-wrap{position:relative}
+.ac-dd{position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--card);border:1.5px solid var(--border);border-radius:var(--r12);box-shadow:var(--sh-lg);z-index:300;max-height:220px;overflow-y:auto;display:none}
+.ac-dd.open{display:block}
+.ac-item{padding:10px 14px;cursor:pointer;font-size:14px;transition:background .1s}
+.ac-item:hover{background:var(--blue-light);color:var(--blue)}
+
+/* ── Modal ── */
+.m-ov{position:fixed;inset:0;background:rgba(0,0,0,.45);backdrop-filter:blur(4px);z-index:500;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s}
+.m-ov.open{opacity:1;pointer-events:all}
+.modal{background:var(--card);border-radius:var(--r24);width:640px;max-width:95vw;max-height:85vh;display:flex;flex-direction:column;box-shadow:var(--sh-lg);transform:scale(.95) translateY(10px);transition:transform .2s}
+.m-ov.open .modal{transform:scale(1) translateY(0)}
+.modal.sm{width:400px}
+.modal.stat-modal{width:980px}
+.stat-head{padding:24px;border-bottom:1px solid var(--border);background:linear-gradient(180deg,var(--blue-light),transparent)}
+.stat-kicker{font-size:11px;font-weight:800;color:var(--blue);letter-spacing:.7px;margin-bottom:6px}
+.stat-title{font-size:24px;font-weight:900;letter-spacing:-.6px}
+.stat-desc{font-size:13px;color:var(--sub);margin-top:6px}
+.stat-body{padding:18px 24px 24px;overflow:auto}
+.stat-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}
+.stat-mini{border:1px solid var(--border);background:var(--card);border-radius:16px;padding:14px;box-shadow:var(--sh-sm)}
+.stat-mini-lbl{font-size:11px;color:var(--sub);font-weight:800;margin-bottom:5px}
+.stat-mini-val{font-size:24px;font-weight:900;letter-spacing:-.5px}
+.stat-mini-sub{font-size:11px;color:var(--sub);margin-top:4px}
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.stat-card{border:1px solid var(--border);background:var(--card);border-radius:18px;padding:16px;box-shadow:var(--sh-sm);min-width:0}
+.stat-card.wide{grid-column:1/-1}
+.stat-card-h{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}
+.stat-card-title{font-size:15px;font-weight:900}
+.stat-card-sub{font-size:11px;color:var(--sub)}
+.stat-bars{display:flex;flex-direction:column;gap:10px}
+.stat-row{display:grid;grid-template-columns:minmax(86px,140px) 1fr 44px;align-items:center;gap:10px;font-size:12px}
+.stat-name{font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.stat-track{height:9px;background:var(--g100);border-radius:99px;overflow:hidden}
+.stat-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,#3182F6,#22C55E)}
+.stat-count{text-align:right;font-weight:900}
+.stat-tags{display:flex;flex-wrap:wrap;gap:8px}
+.stat-tag{display:flex;align-items:center;gap:6px;border:1px solid var(--border);background:var(--g50);border-radius:999px;padding:8px 11px;font-size:12px;font-weight:800}
+.stat-tag b{color:var(--blue)}
+.stat-months{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;align-items:end;height:138px}
+.stat-month{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:7px;min-width:0;height:100%}
+.stat-month-bar{width:100%;min-height:5px;border-radius:10px 10px 4px 4px;background:linear-gradient(180deg,#3182F6,#7DD3FC)}
+.stat-month-lbl{font-size:10px;color:var(--sub);font-weight:800;white-space:nowrap}
+.stat-empty{padding:34px 10px;text-align:center;color:var(--sub);font-size:13px;background:var(--g50);border-radius:14px}
+[data-theme=dark] .pg-sub,[data-theme=dark] .stat-tag{background:#151922}
+[data-theme=dark] .stat-head{background:linear-gradient(180deg,rgba(49,130,246,.15),transparent)}
+@media(max-width:768px){.stat-summary{grid-template-columns:repeat(2,1fr)}.stat-grid{grid-template-columns:1fr}.stat-row{grid-template-columns:96px 1fr 38px}.db-title-row{gap:7px}.db-actions{width:100%}.db-actions .btn{flex:1;justify-content:center}}
+.m-hdr{padding:22px 24px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border)}
+.m-title{font-size:17px;font-weight:700}
+.m-body{flex:1;overflow-y:auto;padding:16px 24px}
+.m-foot{padding:14px 24px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px}
+.tpl-item{border:1.5px solid var(--border);border-radius:var(--r12);padding:13px 15px;margin-bottom:8px;cursor:pointer;transition:all .15s}
+.tpl-item:hover{border-color:var(--blue);background:var(--blue-light)}
+.tpl-nm{font-weight:700;font-size:14px;margin-bottom:4px}
+.tpl-prev{font-family:'Fira Code',monospace;font-size:11px;color:var(--sub);white-space:pre;max-height:52px;overflow:hidden}
+
+/* ── Empty & Toast ── */
+.empty{text-align:center;padding:64px 24px;color:var(--sub)}
+.empty-ico{font-size:44px;margin-bottom:12px}
+.empty-t{font-size:17px;font-weight:700;color:var(--text);margin-bottom:6px}
+#toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(14px);background:#1F2937;color:#fff;padding:11px 22px;border-radius:var(--r12);font-size:13px;font-weight:500;z-index:900;opacity:0;transition:all .25s;pointer-events:none;white-space:nowrap}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--g300);border-radius:99px}
+
+#v-home.active,#v-user-login.active,#v-admin-login.active{min-height:calc(100vh - var(--hh) - 56px);display:flex;align-items:center;justify-content:center}
+.auth-wrap{max-width:520px;margin:72px auto 0;padding:0 8px}
+#v-home .auth-wrap,#v-user-login .auth-wrap,#v-admin-login .auth-wrap{width:100%;max-width:630px;margin:0 auto}
+.home-logo-wrap{display:flex;align-items:center;justify-content:center;min-height:58px;margin-bottom:20px}
+.home-logo{display:none;max-width:216px;max-height:58px;width:auto;height:auto;object-fit:contain}
+.home-logo.show{display:block}
+.home-logo-fallback{font-size:24px;font-weight:800;letter-spacing:-.5px}
+.admin-side{display:flex;flex-direction:column;gap:16px}
+.logo-preview-box{height:92px;border:1.5px dashed var(--border);border-radius:var(--r12);display:flex;align-items:center;justify-content:center;background:var(--g50);margin:10px 0;color:var(--sub);overflow:hidden}
+.admin-logo-preview{display:none;max-width:216px;max-height:58px;width:auto;height:auto;object-fit:contain}
+.admin-logo-preview.show{display:block}
+.auth-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r16);box-shadow:var(--sh-md);padding:28px}
+.auth-title{font-size:24px;font-weight:800;letter-spacing:-.5px;margin-bottom:6px}
+.auth-sub{font-size:13px;color:var(--sub);margin-bottom:22px}
+.auth-actions{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.auth-actions .btn{justify-content:center;height:48px}
+.auth-user{font-size:12px;color:var(--sub);font-weight:700}
+#logout-btn{display:none}
+.admin-wrap{max-width:900px;margin:0 auto;padding:28px 0}
+.admin-grid{display:grid;grid-template-columns:320px 1fr;gap:16px;align-items:start}
+.user-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;border-bottom:1px solid var(--border)}
+.user-row:last-child{border-bottom:none}
+.user-name{font-weight:700}
+.user-meta{font-size:11px;color:var(--sub)}
+
+@media(max-width:768px){
+  #app{padding-left:14px;padding-right:14px}
+  #hdr{padding:0 14px}
+  .sum-grid{grid-template-columns:1fr}
+  .meta-grid.g3,.meta-grid.g2{grid-template-columns:1fr}
+  .db-hdr{flex-direction:column;align-items:flex-start;gap:12px}
+  .ed-layout{flex-direction:column;}
+  .ed-side{width:100%; position:relative; top:0; flex-direction:row; padding:10px; overflow-x:auto;}
+  .ed-side-lbl{display:none;}
+  .ed-side .btn {flex:1;}
+  .admin-grid{grid-template-columns:1fr}
+  .auth-actions{grid-template-columns:1fr}
+}
+
+/* 평소 화면(Screen)에서는 인쇄 영역을 아예 렌더링하지 않음 */
+#print-area { 
+  display: none; 
+}
+
+/* ── Print Media Query (PDF 출력용) ── */
+@media print {
+  #print-area { 
+    display: block !important; /* 인쇄 시에만 강제로 표시 */
+    position: absolute; 
+    left: 0; 
+    top: 0; 
+    width: 100%; 
+  }
+  body > *:not(#print-area) { display: none !important; } /* 인쇄 시 나머지 요소 숨김 */
+  
+  /* 배경색이나 테두리 등이 PDF에 잘 나오도록 설정 */
+  * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+
+	/* 커버 페이지 (첫 장 중앙 정렬) */
+	  .print-cover { 
+		height: 100vh; 
+		display: flex; 
+		flex-direction: column; /* 세로 방향 정렬 추가 */
+		align-items: center; 
+		justify-content: center; 
+		page-break-after: always; 
+	  }
+  .print-cover h1 { 
+    font-size: 38px; 
+    font-weight: 800; 
+    letter-spacing: -1px; 
+  }
+
+  /* 개별 로그 페이지 */
+  .print-page { 
+    page-break-after: always; 
+    padding: 20px 40px; 
+    font-family: 'NanumBarunGothic', sans-serif;
+  }
+  .print-page:last-child { page-break-after: auto; }
+  
+  .p-hdr { border-bottom: 2px solid var(--text); padding-bottom: 12px; margin-bottom: 20px; }
+  .p-title { font-size: 24px; font-weight: 800; margin-bottom: 8px; }
+  .p-meta { font-size: 13px; color: var(--sub); display: flex; gap: 15px; }
+  .p-blk { margin-bottom: 16px; }
+  .p-txt { font-size: 14px; line-height: 1.8; white-space: pre-wrap; }
+  .p-sql { background: var(--g50); padding: 16px; border-radius: 8px; border: 1px solid var(--border); font-family: monospace; font-size: 12px; white-space: pre-wrap; }
+  .p-img img { max-width: 100%; border-radius: 8px; }
+}
+/* 인라인 코드블럭 (Pill) 스타일 보완 */
+.copy-pill {
+  display: inline-block;
+  background-color: var(--g100) !important; /* PDF 출력 시 배경색 유지 */
+  color: var(--blue) !important;
+  border: 1px solid var(--g200);
+  border-radius: 4px;
+  padding: 0px 6px;
+  font-family: 'Consolas', monospace;
+  font-size: 0.95em;
+  font-weight: 600;
+  cursor: pointer;
+  -webkit-print-color-adjust: exact; /* 크롬/엣지 PDF 출력 시 색상 강제 적용 */
+  print-color-adjust: exact;
+}
+
+/* PDF 전용: PDF에서는 클릭이 안 되므로 커서 모양 변경 */
+@media print {
+  .copy-pill { cursor: default; border: 0.5pt solid var(--g300); }
+}
+
+.copy-pill:hover {
+  background-color: var(--g200);
+  box-shadow: 0 0 0 2px rgba(49, 130, 246, 0.2);
+}
+
+/* 다크모드 대응 */
+html[data-theme="dark"] .copy-pill {
+  background-color: #374151;
+  border-color: #4B5563;
+  color: #F9FAFB;
+}
+html[data-theme="dark"] .copy-pill:hover {
+  background-color: #404040;
+}
+/* 드래그 앤 드롭 스타일 */
+.edit-blk {
+  cursor: grab; /* 잡을 수 있다는 표시 */
+  transition: transform 0.2s, opacity 0.2s;
+}
+
+.edit-blk:active {
+  cursor: grabbing;
+}
+
+.edit-blk.dragging {
+  opacity: 0.4;
+  transform: scale(0.98);
+  border: 2px dashed var(--blue); /* 드래그 중인 블록 강조 */
+}
+
+/* 입력창 내부에서는 드래그 방지 (텍스트 선택을 위해) */
+.edit-blk input, .edit-blk textarea {
+  cursor: text;
+}
+
+.feature-modal{width:880px}
+.feature-hero{padding:24px 26px 18px;border-bottom:1px solid var(--border);background:linear-gradient(180deg,var(--blue-light),transparent)}
+.feature-kicker{font-size:11px;font-weight:800;color:var(--blue);letter-spacing:.6px;text-transform:uppercase;margin-bottom:6px}
+.feature-title{font-size:24px;font-weight:800;letter-spacing:-.6px}
+.feature-desc{font-size:13px;color:var(--sub);margin-top:6px;line-height:1.7}
+.feature-body{padding:20px 24px 24px;overflow-y:auto}
+.feature-section-title{font-size:13px;font-weight:800;color:var(--text);margin:4px 0 10px}
+.feature-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:18px}
+.feature-card{display:grid;grid-template-columns:38px 1fr;gap:12px;border:1px solid var(--border);border-radius:var(--r12);padding:13px 14px;background:var(--card)}
+.feature-ico{width:38px;height:38px;border-radius:12px;background:var(--blue-light);color:var(--blue);display:flex;align-items:center;justify-content:center}
+.feature-card-title{font-weight:800;font-size:13px;margin-bottom:3px}
+.feature-card-desc{font-size:12px;color:var(--sub);line-height:1.55}
+.shortcut-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-bottom:18px}
+.shortcut{border:1px solid var(--border);border-radius:var(--r12);padding:10px;background:var(--g50)}
+.keycap{display:inline-flex;min-width:28px;height:26px;align-items:center;justify-content:center;padding:0 8px;border-radius:8px;border:1px solid var(--border);background:var(--card);box-shadow:var(--sh-sm);font-size:12px;font-weight:800;color:var(--text);margin-bottom:7px}
+.shortcut div:last-child{font-size:12px;color:var(--sub);line-height:1.4}
+.feature-flow{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.flow-step{border-radius:var(--r12);background:var(--g50);padding:12px;border:1px solid var(--border)}
+.flow-num{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--blue);color:#fff;font-size:11px;font-weight:800;margin-bottom:8px}
+.flow-title{font-size:13px;font-weight:800;margin-bottom:3px}
+.flow-desc{font-size:12px;color:var(--sub);line-height:1.5}
+[data-theme=dark] .feature-hero{background:linear-gradient(180deg,rgba(49,130,246,.16),transparent)}
+[data-theme=dark] .feature-ico{background:#1E3A5F}
+[data-theme=dark] .shortcut,[data-theme=dark] .flow-step{background:#151922}
+
+@media(max-width:768px){
+  .feature-modal{width:95vw}
+  .feature-grid,.shortcut-grid,.feature-flow{grid-template-columns:1fr}
+}
+
+.ai-fab{position:fixed;right:28px;bottom:28px;width:58px;height:58px;border-radius:50%;border:none;background:linear-gradient(135deg,#3182F6,#2563EB);color:#fff;box-shadow:0 12px 32px rgba(49,130,246,.32);display:none;align-items:center;justify-content:center;cursor:pointer;z-index:450;transition:transform .16s,box-shadow .16s,background .16s;font-size:17px;font-weight:900;letter-spacing:0}
+.ai-fab:hover{transform:translateY(-2px);box-shadow:0 16px 38px rgba(49,130,246,.4);background:linear-gradient(135deg,#2B75E8,#1D4ED8)}
+.ai-fab.show{display:flex}
+.ai-panel{position:fixed;right:28px;bottom:96px;width:460px;max-width:calc(100vw - 32px);height:640px;max-height:calc(100vh - 128px);min-width:340px;min-height:420px;background:var(--card);border:1px solid var(--border);border-radius:22px;box-shadow:var(--sh-lg);z-index:460;display:none;flex-direction:column;overflow:visible}
+.ai-panel.open{display:flex;animation:fi .18s ease}
+.ai-head{padding:16px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:12px;background:linear-gradient(180deg,var(--blue-light),transparent)}
+.ai-title{display:flex;align-items:center;gap:10px;font-weight:800}
+.ai-avatar{width:34px;height:34px;border-radius:12px;background:var(--blue);color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.ai-sub{font-size:11px;color:var(--sub);font-weight:600;margin-top:1px}
+.ai-actions{display:flex;gap:4px}
+.ai-icon-btn{width:32px;height:32px;border-radius:50%;border:1px solid var(--border);background:var(--card);color:var(--sub);display:flex;align-items:center;justify-content:center;cursor:pointer}
+.ai-icon-btn:hover{background:var(--g100);color:var(--text)}
+.ai-settings{display:none;padding:12px 14px;border-bottom:1px solid var(--border);background:var(--g50);gap:8px}
+.ai-settings.open{display:grid}
+.ai-settings .inp{height:36px;font-size:12px;border-radius:10px}
+.ai-hint{font-size:11px;color:var(--sub);line-height:1.5}
+.ai-msgs{flex:1;overflow:auto;padding:16px;display:flex;flex-direction:column;gap:10px;background:var(--bg)}
+.ai-msg{max-width:88%;border:1px solid var(--border);border-radius:16px;padding:10px 12px;font-size:13px;line-height:1.65;white-space:normal;box-shadow:var(--sh-sm);overflow-wrap:anywhere}
+.ai-msg p{margin:0 0 8px}.ai-msg p:last-child{margin-bottom:0}
+.ai-msg strong{font-weight:800;color:inherit}
+.ai-msg code{font-family:'Fira Code','Consolas',monospace;font-size:.92em;background:var(--g100);border:1px solid var(--border);border-radius:6px;padding:1px 5px}
+.ai-msg pre{margin:8px 0;background:#263247;color:#F8FAFC;border-radius:12px;padding:12px;overflow:auto;white-space:pre;font-family:'Fira Code','Consolas',monospace;font-size:12px;line-height:1.55}
+.ai-msg pre code{background:transparent;border:none;color:inherit;padding:0;font-size:inherit}
+.ai-msg.user code{background:rgba(255,255,255,.18);border-color:rgba(255,255,255,.25)}
+.ai-resize{position:absolute;left:-3px;top:-3px;width:17px;height:17px;border-radius:6px;background:rgba(49,130,246,.48);box-shadow:0 4px 12px rgba(49,130,246,.18);cursor:nwse-resize;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.9);z-index:2}
+.ai-resize::before{content:'';width:7px;height:7px;border-left:1.5px solid currentColor;border-top:1.5px solid currentColor;border-radius:1px;opacity:.82}
+[data-theme=dark] .ai-resize{background:rgba(80,140,230,.36);box-shadow:0 4px 12px rgba(0,0,0,.24);color:rgba(255,255,255,.78)}
+.ai-msg.bot{align-self:flex-start;background:var(--card);border-top-left-radius:6px}
+.ai-msg.user{align-self:flex-end;background:var(--blue);color:#fff;border-color:var(--blue);border-top-right-radius:6px}
+.ai-msg.err{background:#FEF2F2;color:#B91C1C;border-color:#FECACA}
+.ai-suggestions{padding:0 14px 12px;background:var(--bg);display:flex;gap:6px;flex-wrap:wrap}
+.ai-chip{border:1px solid var(--border);background:var(--card);color:var(--sub);border-radius:999px;padding:6px 10px;font-size:11px;font-weight:700;cursor:pointer}
+.ai-chip:hover{border-color:var(--blue);color:var(--blue);background:var(--blue-light)}
+.ai-input{border-top:1px solid var(--border);padding:12px;background:var(--card);display:flex;gap:8px;align-items:flex-end}
+.ai-input textarea{min-height:42px;max-height:96px;resize:none;border-radius:14px;font-size:13px}
+.ai-send{width:42px;height:42px;border-radius:14px;border:none;background:var(--blue);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
+.ai-send:disabled{opacity:.55;cursor:not-allowed}
+[data-theme=dark] .ai-head{background:linear-gradient(180deg,rgba(49,130,246,.16),transparent)}
+[data-theme=dark] .ai-msg.err{background:#3B171A;color:#FCA5A5;border-color:#5B1F24}
+[data-theme=dark] .ai-msg code{background:#151922}
+[data-theme=dark] .ai-msg pre{background:#0F172A}
+@media(max-width:768px){
+  .ai-fab{right:18px;bottom:18px}
+  .ai-panel{right:12px;bottom:84px;width:calc(100vw - 24px);height:min(560px,calc(100vh - 104px))}
+}
+
+
+/* Mobile responsive refinements */
+@media(max-width:768px){
+  :root{--hh:58px}
+  body{font-size:13px}
+  #hdr{height:var(--hh);padding:0 14px}
+  #app{padding-top:var(--hh);padding-left:14px;padding-right:14px;padding-bottom:32px}
+  .logo-wrap{gap:8px}
+  .logo-icon{width:30px;height:30px;border-radius:9px}
+  .logo-text{font-size:14px}
+  .logo-sub,#hdr-date{display:none}
+  .hdr-r{gap:6px}
+  #dark-btn,#feature-btn{width:34px;height:34px}
+
+  .btn{min-height:40px;justify-content:center;padding:9px 13px}
+  .btn-sm{min-height:34px;padding:7px 10px}
+  .inp{font-size:14px;min-height:42px}
+
+  .db-hdr{padding:18px 0 12px;align-items:stretch}
+  .db-title-row{align-items:center;gap:8px}
+  .pg-title{font-size:20px}
+  .pg-sub{font-size:11px;padding:3px 8px}
+  .db-actions{width:100%;display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .sum-grid{grid-template-columns:1fr;gap:10px;margin-bottom:14px}
+  .sum-card{padding:16px;border-radius:14px}
+  .sum-val{font-size:28px}
+  .sum-val span{font-size:15px}
+
+  .act-row{flex-direction:column;align-items:stretch;gap:8px}
+  .srch-wrap{width:100%;flex:none}
+  .srch-wrap .inp{height:44px}
+  .act-r{width:100%;margin-left:0;display:grid;grid-template-columns:1fr 1fr;gap:8px}
+
+  #log-tbl.tbl-wrap{background:transparent;border:none;box-shadow:none;overflow:visible}
+  #log-tbl table,#log-tbl tbody,#log-tbl tr,#log-tbl td{display:block;width:100%}
+  #log-tbl thead{display:none}
+  #log-tbl tbody tr{background:var(--card);border:1px solid var(--border);border-radius:16px;box-shadow:var(--sh-sm);padding:12px 14px;margin-bottom:10px}
+  #log-tbl tbody tr:hover{background:var(--card)}
+  #log-tbl tbody td{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;padding:7px 0;border:none;white-space:normal;overflow:visible;text-overflow:clip;font-size:13px}
+  #log-tbl tbody td::before{content:attr(data-label);flex:0 0 68px;color:var(--sub);font-size:11px;font-weight:800}
+  #log-tbl .td-no{display:none}
+  #log-tbl .td-no::before{display:none}
+  #log-tbl .td-co{font-weight:700}
+  #log-tbl .ttl-txt{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;line-height:1.45}
+  #log-tbl .td-actions{display:block!important;border-top:1px solid var(--border);margin-top:6px;padding-top:10px;text-align:initial!important}
+  #log-tbl .td-actions::before{display:none}
+  #log-tbl .td-actions>div{display:grid!important;grid-template-columns:1fr 1fr 1fr;gap:6px!important}
+  #log-tbl .td-actions .btn{width:100%;padding-left:6px;padding-right:6px}
+
+  .pagi{overflow-x:auto;justify-content:flex-start;padding:14px 2px}
+  .pg-btn{flex:0 0 34px}
+
+  .ed-wrap,.det-wrap,.admin-wrap{padding:18px 0}
+  .ed-topbar{flex-direction:column;align-items:stretch;gap:10px;margin-bottom:14px}
+  .ed-topbar>div{width:100%;justify-content:space-between}
+  .ed-topbar .btn{flex:1}
+  .ed-layout{flex-direction:column;gap:12px}
+  .ed-side{width:100%;position:static;flex-direction:row;overflow-x:auto;padding:10px;gap:8px}
+  .ed-side .btn{flex:1;min-width:84px}
+  .ed-side-lbl{display:none}
+  .card{padding:16px;border-radius:14px}
+  .meta-grid.g3,.meta-grid.g2{grid-template-columns:1fr}
+  .blk-tb{opacity:1;position:static;justify-content:flex-end;margin-bottom:6px}
+  .sql-ta{font-size:12px!important;min-height:120px}
+  .drop-zone{padding:20px}
+
+  .det-hdr{padding:18px;border-radius:14px}
+  .det-title{font-size:20px;line-height:1.35}
+  .det-meta{gap:9px;flex-direction:column}
+  .det-txt{padding:15px;line-height:1.75}
+  .sql-preview pre{max-height:320px}
+
+  .modal{width:calc(100vw - 16px);max-width:calc(100vw - 16px);max-height:92dvh;border-radius:18px}
+  .m-ov{align-items:flex-end;padding:8px}
+  .m-hdr{padding:16px}
+  .m-body{padding:14px 16px}
+  .m-foot{padding:12px 16px;gap:8px}
+  .m-foot .btn{flex:1}
+  .feature-modal{width:calc(100vw - 16px)}
+  .feature-hero{padding:18px}
+  .feature-title{font-size:22px}
+  .feature-body{padding:16px}
+
+  .stat-head{padding:18px}
+  .stat-title{font-size:22px}
+  .stat-body{padding:14px}
+  .stat-summary{grid-template-columns:1fr 1fr;gap:8px}
+  .stat-mini{padding:12px;border-radius:14px}
+  .stat-mini-val{font-size:21px}
+  .stat-grid{grid-template-columns:1fr;gap:10px}
+  .stat-card{padding:14px;border-radius:15px}
+  .stat-row{grid-template-columns:86px 1fr 38px;gap:8px}
+  .stat-months{height:118px;gap:6px}
+  .stat-tag{padding:7px 9px;font-size:11px}
+
+  .auth-wrap{width:100%;padding:0}
+  .auth-card{padding:22px 18px;border-radius:16px}
+  .auth-actions{grid-template-columns:1fr;gap:9px}
+  .home-logo-wrap{min-height:44px;margin-bottom:16px}
+  .home-logo{max-width:178px;max-height:48px}
+  .admin-grid{grid-template-columns:1fr}
+  .user-row{align-items:flex-start;flex-direction:column}
+  .user-row>div:last-child{display:grid;grid-template-columns:1fr 1fr;width:100%;gap:8px}
+
+  .ai-fab{right:16px;bottom:16px;width:52px;height:52px;font-size:15px}
+  .ai-panel{left:8px;right:8px;bottom:76px;width:auto;max-width:none;height:min(70dvh,560px);min-width:0;min-height:360px;border-radius:18px}
+  .ai-resize{display:none}
+  .ai-head{padding:13px 14px}
+  .ai-avatar{width:30px;height:30px;border-radius:10px}
+  .ai-msgs{padding:12px}
+  .ai-msg{max-width:94%;font-size:12px}
+  .ai-suggestions{padding:0 12px 10px;gap:6px;overflow-x:auto;flex-wrap:nowrap}
+  .ai-chip{flex:0 0 auto}
+  .ai-input{padding:10px}
+}
+
+@media(max-width:420px){
+  #app{padding-left:10px;padding-right:10px}
+  #hdr{padding:0 10px}
+  .logo-text{max-width:92px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .db-actions,.act-r{grid-template-columns:1fr}
+  .stat-summary{grid-template-columns:1fr}
+  .stat-row{grid-template-columns:78px 1fr 34px;font-size:11px}
+  #log-tbl .td-actions>div{grid-template-columns:1fr}
+  .ai-panel{left:6px;right:6px;bottom:72px;height:72dvh}
+}
+
+</style>
+</head>
+<body>
+
+<header id="hdr">
+  <div class="logo-wrap" onclick="goHomeOrDash()">
+    <div class="logo-icon">
+      <svg width="18" height="18" fill="none" stroke="#fff" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+    </div>
+    <div>
+      <div class="logo-text">CS 운영 로그</div>
+      <div class="logo-sub">Customer Support Management</div>
+    </div>
+  </div>
+  <div class="hdr-r">
+    <span id="auth-label" class="auth-user"></span>
+    <button id="logout-btn" class="btn btn-ghost btn-sm" onclick="logout()">로그아웃</button>
+    <span id="hdr-date"></span>
+    <button id="dark-btn" onclick="toggleDark()" title="다크모드">
+      <svg id="dark-ico" width="15" height="15" fill="currentColor" viewBox="0 0 24 24"><path d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
+    </button>
+    <button id="feature-btn" onclick="openFeatureModal()" title="기능 소개">
+      <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path stroke-linecap="round" d="M12 17v-5"/><path stroke-linecap="round" d="M12 8h.01"/></svg>
+    </button>
+  </div>
+</header>
+
+<div id="app">
+
+<div id="v-home" class="view active">
+  <div class="auth-wrap">
+    <div class="auth-card">
+      <div class="home-logo-wrap">
+        <img id="home-logo" class="home-logo" alt="CS 운영 로그 로고">
+        <div id="home-logo-fallback" class="home-logo-fallback">CS 운영 로그</div>
+      </div>
+      <div class="auth-actions">
+        <button class="btn btn-primary" onclick="showUserLogin()">일반 로그인</button>
+        <button class="btn btn-secondary" onclick="showAdminLogin()">관리자 로그인</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="v-user-login" class="view">
+  <div class="auth-wrap">
+    <div class="auth-card">
+      <div class="auth-title">일반 로그인</div>
+      <div class="fg" style="margin-bottom:16px">
+        <label class="lbl req">이름</label>
+        <input class="inp" id="login-name" type="text" placeholder="이름 입력" onkeydown="if(event.key==='Enter')loginUser()">
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end">
+        <button class="btn btn-ghost" onclick="goHome()">취소</button>
+        <button class="btn btn-primary" onclick="loginUser()">로그인</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="v-admin-login" class="view">
+  <div class="auth-wrap">
+    <div class="auth-card">
+      <div class="auth-title">관리자 로그인</div>
+      <div class="auth-sub">사용자 추가, 편집, 삭제를 관리합니다.</div>
+      <div class="fg" style="margin-bottom:16px">
+        <label class="lbl req">관리자 암호</label>
+        <input class="inp" id="admin-pass" type="password" placeholder="암호 입력" onkeydown="if(event.key==='Enter')loginAdmin()">
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end">
+        <button class="btn btn-ghost" onclick="goHome()">취소</button>
+        <button class="btn btn-primary" onclick="loginAdmin()">로그인</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="v-admin" class="view">
+  <div class="admin-wrap">
+    <div class="db-hdr">
+      <div>
+        <div class="pg-title">사용자 관리</div>
+        <div class="pg-sub">일반 로그인에 사용할 사용자를 추가, 편집, 삭제합니다.</div>
+      </div>
+    </div>
+    <div class="admin-grid">
+      <div class="admin-side">
+      <div class="card">
+        <input type="hidden" id="admin-user-id">
+        <div class="fg" style="margin-bottom:14px">
+          <label class="lbl req">사용자 이름</label>
+          <input class="inp" id="admin-user-name" placeholder="예: 홍길동" onkeydown="if(event.key==='Enter')saveAdminUser()">
+        </div>
+        <div style="display:flex;gap:8px;justify-content:flex-end">
+          <button class="btn btn-ghost btn-sm" onclick="resetAdminForm()">초기화</button>
+          <button class="btn btn-primary btn-sm" onclick="saveAdminUser()">저장</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="pg-title" style="font-size:17px">홈 로고</div>
+        <div class="pg-sub">라이트/다크모드에 맞는 로고를 각각 업로드합니다.</div>
+
+        <div class="fg" style="margin-top:14px">
+          <label class="lbl">라이트모드 로고</label>
+          <div class="logo-preview-box">
+            <img id="admin-logo-preview-light" class="admin-logo-preview" alt="라이트모드 홈 로고 미리보기">
+            <span id="admin-logo-empty-light">등록된 라이트 로고가 없습니다.</span>
+          </div>
+          <input type="file" id="logo-file-light" accept="image/png,image/jpeg,image/webp,image/*" style="display:none" onchange="handleLogoFile(this,'light')">
+          <div style="display:flex;gap:8px;justify-content:flex-end">
+            <button class="btn btn-ghost btn-sm" onclick="removeLogo('light')">삭제</button>
+            <button class="btn btn-primary btn-sm" onclick="document.getElementById('logo-file-light').click()">라이트 로고 업로드</button>
+          </div>
+        </div>
+
+        <div class="fg" style="margin-top:18px">
+          <label class="lbl">다크모드 로고</label>
+          <div class="logo-preview-box">
+            <img id="admin-logo-preview-dark" class="admin-logo-preview" alt="다크모드 홈 로고 미리보기">
+            <span id="admin-logo-empty-dark">등록된 다크 로고가 없습니다.</span>
+          </div>
+          <input type="file" id="logo-file-dark" accept="image/png,image/jpeg,image/webp,image/*" style="display:none" onchange="handleLogoFile(this,'dark')">
+          <div style="display:flex;gap:8px;justify-content:flex-end">
+            <button class="btn btn-ghost btn-sm" onclick="removeLogo('dark')">삭제</button>
+            <button class="btn btn-primary btn-sm" onclick="document.getElementById('logo-file-dark').click()">다크 로고 업로드</button>
+          </div>
+        </div>
+      </div>
+      </div>
+      <div class="tbl-wrap" id="admin-users"></div>
+    </div>
+  </div>
+</div>
+
+<div id="v-dash" class="view">
+  <div class="db-hdr">
+    <div class="db-title-wrap">
+      <div class="db-title-row">
+        <div class="pg-title">대응 내역 관리</div>
+        <div class="pg-sub" id="today-lbl"></div>
+      </div>
+    </div>
+    <div class="db-actions">
+      <button class="btn btn-ghost" onclick="openStatsModal()">
+        <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M4 19V5"/><path d="M4 19h16"/><rect x="7" y="11" width="3" height="5" rx="1"/><rect x="12" y="7" width="3" height="9" rx="1"/><rect x="17" y="3" width="3" height="13" rx="1"/></svg>
+        통계
+      </button>
+      <button class="btn btn-primary" onclick="goEditor(null)">
+        <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" d="M12 4v16m8-8H4"/></svg>
+        새 글 작성
+      </button>
+    </div>
+  </div>
+
+  <div class="sum-grid" id="sum-cards"></div>
+
+<div class="act-row">
+  <div class="srch-wrap" style="position: relative;"> <svg class="srch-ico" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+      <circle cx="11" cy="11" r="8"/><path stroke-linecap="round" d="m21 21-4.35-4.35"/>
+    </svg>
+    <input class="inp" id="srch" type="text" placeholder="고객사명, 제목, 담당자명으로 검색..." oninput="doSearch(this.value)">
+    
+    <button id="clear-btn" onclick="clearSch()" 
+            style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); display: none; border: none; background: transparent; cursor: pointer; color: var(--g400); padding: 4px;">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+      </svg>
+    </button>
+  </div>
+  <div class="act-r">
+    <button class="btn btn-ghost btn-sm" onclick="exportCSV()">CSV 내보내기</button>
+    <button class="btn btn-ghost btn-sm" onclick="generatePDF()">PDF 인쇄</button>
+  </div>
+</div>
+  <div class="res-ct" id="res-ct"></div>
+  <div class="tbl-wrap" id="log-tbl"></div>
+  <div class="pagi" id="pagi"></div>
+</div>
+
+<div id="v-edit" class="view">
+  <div class="ed-wrap">
+    <div class="ed-topbar">
+      <div style="display:flex;align-items:center;gap:10px">
+        <button class="btn btn-ghost btn-sm" onclick="goDash()">
+          <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+          목록
+        </button>
+        <div class="pg-title" id="ed-lbl">새 글 작성</div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-ghost" onclick="goDash()">취소</button>
+        <button class="btn btn-primary" onclick="saveLog()">
+          <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
+          저장 (Ctrl+S)
+        </button>
+      </div>
+    </div>
+
+    <div class="ed-layout">
+      <div class="ed-main">
+        <div class="card" style="margin-bottom:14px">
+          <div class="meta-grid g3" style="margin-bottom:14px">
+            <div class="fg"><label class="lbl">날짜</label><input class="inp" id="ed-date" type="date"></div>
+            <div class="fg"><label class="lbl">시간</label><input class="inp" id="ed-time" type="time"></div>
+            <div class="fg">
+              <label class="lbl req">고객사</label>
+              <div class="ac-wrap">
+                <input class="inp" id="ed-co" type="text" placeholder="고객사 검색..." autocomplete="off"
+                  oninput="acInput(this.value)" onfocus="acFocus()" onblur="acBlur()">
+                <div class="ac-dd" id="ac-dd"></div>
+              </div>
+            </div>
+          </div>
+          <div class="meta-grid g2" style="margin-bottom:14px">
+  <div class="fg">
+    <label class="lbl req">담당자명</label>
+    <input class="inp" id="ed-mgr" type="text" placeholder="담당자명 입력">
+  </div>
+  <div class="fg">
+    <label class="lbl">연락처</label>
+    <input class="inp" 
+           id="ed-ct" 
+           type="text" 
+           placeholder="010-0000-0000" 
+           oninput="formatPhoneNumber(this)" 
+           maxlength="13"
+           inputmode="numeric"> </div>
+</div>
+          <div class="fg"><label class="lbl req">제목</label><input class="inp" id="ed-ttl" type="text" placeholder="CS 대응 내용 제목 입력"></div>
+        </div>
+
+        <div class="card">
+          <input type="file" id="img-fi" accept="image/*" style="display:none" onchange="handleImgFile(this)">
+          <div id="blk-container"></div>
+          <div class="drop-zone" id="dz"
+            ondragover="event.preventDefault();this.classList.add('dov')"
+            ondragleave="this.classList.remove('dov')"
+            ondrop="handleDrop(event)"
+            onclick="document.getElementById('img-fi').click()">
+            <div class="drop-zone-ico">📎</div>
+            <div style="font-weight:600;margin-bottom:3px">이미지 드래그 앤 드롭 (또는 Ctrl+V 붙여넣기)</div>
+            <div style="font-size:12px">클릭하여 파일 선택</div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="ed-side">
+        <!--<div class="ed-side-lbl">블록 추가</div> -->
+        <button class="btn btn-ghost btn-sm" style="justify-content:center" onclick="addBlk('text')">텍스트 블록</button>
+        <button class="btn btn-ghost btn-sm" style="justify-content:center" onclick="addBlk('sql')">SQL 블록</button>
+        <button class="btn btn-ghost btn-sm" style="justify-content:center" onclick="document.getElementById('img-fi').click()">이미지 추가</button>
+        <div style="border-top:1px solid var(--border); margin:8px 0;"></div>
+        <button class="btn btn-primary btn-sm" style="justify-content:center" onclick="openTplModal()">SQL 템플릿</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="v-det" class="view">
+  <div class="det-wrap" id="det-content"></div>
+</div>
+
+</div><div class="m-ov" id="tpl-ov" onclick="if(event.target===this)closeTplModal()">
+  <div class="modal">
+    <div class="m-hdr">
+      <div class="m-title">SQL 템플릿 라이브러리</div>
+      <button class="btn btn-ghost btn-sm btn-icon" onclick="closeTplModal()">✕</button>
+    </div>
+    <div class="m-body" id="tpl-body"></div>
+    <div class="m-foot">
+      <button class="btn btn-secondary btn-sm" onclick="showAddTpl()">+ 새 템플릿</button>
+      <button class="btn btn-ghost btn-sm" onclick="closeTplModal()">닫기</button>
+    </div>
+  </div>
+</div>
+
+<div class="m-ov" id="add-tpl-ov" onclick="if(event.target===this)closeAddTpl()">
+  <div class="modal">
+    <div class="m-hdr"><div class="m-title">새 템플릿 추가</div><button class="btn btn-ghost btn-sm btn-icon" onclick="closeAddTpl()">✕</button></div>
+    <div class="m-body">
+      <div class="fg" style="margin-bottom:12px"><label class="lbl req">템플릿 이름</label><input class="inp" id="tpl-nm" placeholder="예: 잔액 대조 조회"></div>
+      <div class="fg"><label class="lbl req">SQL 쿼리</label><textarea class="inp" id="tpl-sql" placeholder="SELECT ..." style="font-family:monospace;min-height:160px"></textarea></div>
+    </div>
+    <div class="m-foot"><button class="btn btn-ghost btn-sm" onclick="closeAddTpl()">취소</button><button class="btn btn-primary btn-sm" onclick="saveTpl()">저장</button></div>
+  </div>
+</div>
+
+<div class="m-ov" id="cfm-ov">
+  <div class="modal sm">
+    <div class="m-hdr"><div class="m-title">삭제 확인</div></div>
+    <div class="m-body" id="cfm-body" style="padding:18px 24px"></div>
+    <div class="m-foot">
+      <button class="btn btn-ghost btn-sm" onclick="closeCfm()">취소</button>
+      <button class="btn btn-danger btn-sm" id="cfm-ok">삭제</button>
+    </div>
+  </div>
+</div>
+
+<div class="m-ov" id="feature-ov" onclick="if(event.target===this)closeFeatureModal()">
+  <div class="modal feature-modal">
+    <div class="feature-hero">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:14px">
+        <div>
+          <div class="feature-kicker">ONBOARDING</div>
+          <div class="feature-title">CS 운영 로그 기능 소개</div>
+          <div class="feature-desc">글 작성부터 SQL 복사, 이미지 첨부, 사용자별 Firebase 저장까지 한 화면에서 빠르게 관리합니다.</div>
+        </div>
+        <button class="btn btn-ghost btn-sm btn-icon" onclick="closeFeatureModal()" title="닫기">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path stroke-linecap="round" d="M6 6l12 12M18 6L6 18"/></svg>
+        </button>
+      </div>
+    </div>
+    <div class="feature-body">
+      <div class="feature-section-title">주요 기능</div>
+      <div class="feature-grid">
+        <div class="feature-card"><div class="feature-ico"><svg width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 19.5V6a2 2 0 012-2h12a2 2 0 012 2v13.5"/><path d="M8 8h8M8 12h5"/></svg></div><div><div class="feature-card-title">사용자별 서버 저장</div><div class="feature-card-desc">일반 로그인 후 본인 페이지에 글과 이미지를 Firebase Realtime Database와 Storage로 저장합니다.</div></div></div>
+        <div class="feature-card"><div class="feature-ico"><svg width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg></div><div><div class="feature-card-title">텍스트 블록 작성</div><div class="feature-card-desc">새 글에서 텍스트 블록을 추가하고, 필요한 설명과 처리 내용을 자유롭게 정리합니다. (__글__복사 블록 설정)</div></div></div>
+        <div class="feature-card"><div class="feature-ico"><svg width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M8 9l-4 3 4 3"/><path d="M16 9l4 3-4 3"/><path d="M14 5l-4 14"/></svg></div><div><div class="feature-card-title">SQL 블록과 복사</div><div class="feature-card-desc">SQL 블록은 보기 화면에서 하이라이트되고, 복사 버튼으로 쿼리를 바로 클립보드에 담습니다.</div></div></div>
+        <div class="feature-card"><div class="feature-ico"><svg width="19" height="19" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="4" stroke="currentColor" stroke-width="2"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="currentColor" font-size="9" font-weight="600">SQL</text></svg></div><div><div class="feature-card-title">SQL 템플릿</div><div class="feature-card-desc">자주 쓰는 SQL을 템플릿으로 저장하고, 새 글 작성 중 클릭 한 번으로 삽입합니다.</div></div></div>
+        <div class="feature-card"><div class="feature-ico"><svg width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M8 13l2.5-2.5L14 14l2-2 3 3"/></svg></div><div><div class="feature-card-title">이미지 첨부</div><div class="feature-card-desc">파일 선택, 드래그 앤 드랍, Ctrl+V 붙여넣기로 이미지를 첨부하고 Storage에 보관합니다.</div></div></div>
+        <div class="feature-card"><div class="feature-ico"><svg width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13"/><path d="M3 6h.01M3 12h.01M3 18h.01"/></svg></div><div><div class="feature-card-title">드래그 정렬</div><div class="feature-card-desc">글 수정 시 텍스트, SQL, 이미지 블록을 드래그 앤 드랍으로 원하는 순서로 재배치합니다.</div></div></div>
+        <div class="feature-card"><div class="feature-ico"><svg width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 7h16M7 7v13h10V7M9 7V4h6v3"/></svg></div><div><div class="feature-card-title">관리자 사용자 관리</div><div class="feature-card-desc">관리자는 사용자 추가, 편집, 삭제와 라이트/다크 홈 로고 업로드를 관리합니다.</div></div></div>
+        <div class="feature-card"><div class="feature-ico"><svg width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 2h9l5 5v15a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z"/><path d="M14 2v6h6"/><path d="M8 13h8M8 17h8M8 9h4"/></svg></div><div><div class="feature-card-title">CSV와 PDF 출력</div>
+    <div class="feature-card-desc">
+      현재 검색 결과 기준으로 CSV 다운로드와 PDF 인쇄를 실행할 수 있습니다.
+    </div>
+  </div>
+</div>
+      </div>
+
+      <div class="feature-section-title">단축키</div>
+      <div class="shortcut-grid">
+        <div class="shortcut"><span class="keycap">Q</span><div>홈, 관리자, 대시보드에서 다크모드 전환</div></div>
+        <div class="shortcut"><span class="keycap">N</span><div>대시보드에서 새 글 작성 시작</div></div>
+        <div class="shortcut"><span class="keycap">Ctrl+S</span><div>글 작성/수정 화면에서 저장</div></div>
+        <div class="shortcut"><span class="keycap">E</span><div>상세 보기에서 해당 글 수정</div></div>
+        <div class="shortcut"><span class="keycap">F2</span><div>상세 보기에서 수정 화면으로 이동</div></div>
+        <div class="shortcut"><span class="keycap">Esc</span><div>열려 있는 팝업 닫기</div></div>
+        <div class="shortcut"><span class="keycap">Ctrl+V</span><div>작성 화면에서 클립보드 이미지 붙여넣기</div></div>
+        <div class="shortcut"><span class="keycap">복사</span><div>본문의 인라인 코드와 SQL 복사 버튼 사용</div></div>
+      </div>
+
+      <div class="feature-section-title">프로세스</div>
+      <div class="feature-flow">
+        <div class="flow-step"><div class="flow-num">1</div><div class="flow-title">로그인</div><div class="flow-desc">등록된 이름으로 접속하면 사용자별 로그 공간이 열립니다.</div></div>
+        <div class="flow-step"><div class="flow-num">2</div><div class="flow-title">작성</div><div class="flow-desc">텍스트, SQL, 이미지 블록을 섞어 CS 대응 내용을 구조화합니다.</div></div>
+        <div class="flow-step"><div class="flow-num">3</div><div class="flow-title">로그 확인</div><div class="flow-desc">검색, 템플릿, 복사, CSV/PDF로 구체화된 DB 기반으로 대응을 빠르게 합니다.</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<div class="m-ov" id="stats-ov" onclick="if(event.target===this)closeStatsModal()">
+  <div class="modal stat-modal">
+    <div class="stat-head">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:14px">
+        <div>
+          <div class="stat-kicker">DASHBOARD INSIGHT</div>
+          <div class="stat-title">문의 통계</div>
+          <div class="stat-desc">누적 로그 기준으로 고객사, 키워드, 담당자, 시간 흐름을 한눈에 확인합니다.</div>
+        </div>
+        <button class="btn btn-ghost btn-sm btn-icon" onclick="closeStatsModal()" title="닫기">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path stroke-linecap="round" d="M6 6l12 12M18 6L6 18"/></svg>
+        </button>
+      </div>
+    </div>
+    <div class="stat-body" id="stats-body"></div>
+  </div>
+</div>
+
+<button id="ai-fab" class="ai-fab" onclick="toggleAIChat()" title="AI 챗봇">AI</button>
+
+<div id="ai-panel" class="ai-panel">
+  <div class="ai-resize" title="좌상단을 드래그해 크기 조절"></div>
+  <div class="ai-head">
+    <div class="ai-title">
+      <div class="ai-avatar"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M19 16l.9 2.1L22 19l-2.1.9L19 22l-.9-2.1L16 19l2.1-.9z"/></svg></div>
+      <div>
+        <div>AI CS 어시스턴트</div>
+        <div class="ai-sub">대시보드 글 분석 · SQL 질문</div>
+      </div>
+    </div>
+    <div class="ai-actions">
+      <button class="ai-icon-btn" onclick="closeAIChat()" title="닫기"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path stroke-linecap="round" d="M6 6l12 12M18 6L6 18"/></svg></button>
+    </div>
+  </div>
+  <div id="ai-msgs" class="ai-msgs"></div>
+  <div class="ai-suggestions">
+    <button class="ai-chip" onclick="askAIQuick('최근 CS 로그를 요약해줘')">최근 로그 요약</button>
+    <button class="ai-chip" onclick="askAIQuick('반복되는 이슈나 고객사를 분석해줘')">반복 이슈 분석</button>
+    <button class="ai-chip" onclick="askAIQuick('현재 글들에 포함된 SQL을 검토해줘')">SQL 검토</button>
+  </div>
+  <div class="ai-input">
+    <textarea class="inp" id="ai-input" placeholder="대시보드 글 분석이나 SQL 질문을 입력하세요" onkeydown="handleAIInputKey(event)"></textarea>
+    <button class="ai-send" id="ai-send" onclick="sendAIChat()" title="전송"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const COS = ["공통","쿠팡","삼천리","에스엘","위드유","지알엠","행성사","마케팅(공통)","광주은행","국민은행","기업은행","농협은행","대한전선","동우씨엠","동행복권","디오토몰","라인건설","롯데렌탈","부산은행","비플페이","사학연금","소프트넷","수협은행","시티건설","신한은행","아이지넷","아이티센","우리은행","웹케시㈜","이씨뱅크","일지테크","제주은행","조선일보","쿠팡페이","토스뱅크","하나은행","한국전력","한국제지","호반건설 *멀티밴","흥국생명","노벨리스 코리아","미래에셋 컨설팅","결제전산원","금융결제원","단국대산단","동서연구원","서울대학교","아이엠비씨","어린이재단","엔씨소프트","오토플러스","유한킴벌리","타이어뱅크","하이트진로","한국마사회","가천대학교 산학협력단","경국대학교 산학협력단","인제대학교 산학협력단","충남대학교 산학협력단","한경대학교 산학협력단","한동대학교 산학협력단","항공대학교 산학협력단","홍익대학교 산학협력단","비즈플레이(서울페이)","비즈플레이(제로페이)","국립공원공단","근로복지공단","농식품거래소","대전도시공사","도로교통공단","롯데오토리스","롯데자이언츠","롯데지에프알","마이리얼트립","서울교통공사","서울보증보험","신용보증기금","아이에스티엔","엘지유플러스","전남개발공사","주택관리공단","토스페이먼츠","퍼시스홀딩스","한국야쿠르트","한국연구재단","한국해운조합","한국환경공단","해양환경공단","한국부동산원(한국감정원)","강원대학교병원","국방과학연구소","대중소협력재단","브이티코스메틱","서민금융진흥원","서울경제진흥원 *멀티밴","중소기업중앙회","중앙대학교병원","한국농어촌공사","한국에너지공단","한전원자력연료","대중소협력재단 - 기금시스템","대구한의대학교 산학협력단","숙명여자대학교 산학협력단","한국교원대학교 산학협력단","경기주택도시공사 *멀티밴","아시아나에어포트","한국가스기술공사","한국광해광업공단","한국국토정보공사","한국디자인진흥원","한국산업단지공단","한국산업인력공단","한국어촌어항공단 *멀티밴","한국인터넷진흥원","한국자산관리공사","한국해양진흥공사","한국외국어대학교 산학협력단","국민체육진흥공단(체육산업개발)","국립인천해양박물관","정보통신산업진흥원","한국교육과정평가원","한국승강기안전공단","한국음악저작권협회","한국장애인고용공단","경기도경제과학진흥원","소상공인시장진흥공단","자동차손해배상진흥원","한국보훈복지의료공단","한국산업안전보건공단","한국선주상호보험조합","한국수산자원관리공단","람정엔터테인먼트코리아","한국농수산식품유통공사","해양수산과학기술진흥원","테스트 고객1 *멀티밴","카페24","공통_31","공통_32","공통_42","공통_45","포스코DX","EBS(한국교육방송공사)","비즈플레이 G2C","공통_GIBOX","GME (글로벌머니익스프레스) *멀티밴","HL클레무브","HM","HRE","한양 (IHB-LITE)","에코프로(IHB-Lite)","현대산업개발 (IHB-LITE)","롯데지알에스(IHB-Lite)","포스코모빌리티(IHB-Lite)","에스엠엔터테인먼트(IHB-Lite)","원익IPS","JB금융지주","JB자산운용","JDC","K2 그룹","KB라이프(푸르덴셜)","한전KPS","리에나(ReNA)","rERP","SDCIT(에스디씨아이티)-ERP개발업체","삼성SDS","SK에코플랜트","STX엔진","(해지) 선진"];
+
+const SK = 'cs_v4_logs', TK = 'cs_v4_tpls', CK = 'cs_v4_cts', THEME_K = 'cs_v4_theme';
+const SESSION_K = 'cs_v10_session';
+const FB_ROOT = 'cs_v10';
+const ADMIN_PASSWORD = 'webcash1!';
+const AI_MODEL = 'gpt-5.4-mini';
+const AI_MAX_OUTPUT_TOKENS = 700;
+const AI_MAX_CONTEXT_LOGS = 8;
+const AI_MAX_CONTEXT_CHARS = 4500;
+const AI_MAX_BLOCK_CHARS = 360;
+const AI_MAX_HISTORY_MESSAGES = 4;
+const AI_PROXY_URL = ''; // 선택: Firebase Function/서버 프록시 URL
+const OPENAI_API_KEY = ''; // 보안PC 개인용으로 직접 호출할 경우 여기에 OpenAI API 키를 입력
+const firebaseConfig = {
+  apiKey: "AIzaSyCcWWLiYxvKB8_9gaahW5fwyBavgO-AZQ8",
+  authDomain: "equipment-a6a8c.firebaseapp.com",
+  databaseURL: "https://equipment-a6a8c-default-rtdb.firebaseio.com",
+  projectId: "equipment-a6a8c",
+  storageBucket: "equipment-a6a8c.firebasestorage.app",
+  messagingSenderId: "816613863838",
+  appId: "1:816613863838:web:48dcd792f528e1c53a268f"
+};
+
+firebase.initializeApp(firebaseConfig);
+const rtdb = firebase.database();
+const fbStorage = firebase.storage();
+
+const DEFTPLS = [
+  {id:'dt1', nm:'수시입출 거래내역', sql:`
+SELECT *
+FROM   FN_ACCT_HIS
+WHERE 1=1
+  AND ACCT_TXDAY = '{{거래일자}}'
+  AND ACCT_NO    LIKE '%{{계좌번호}}';
+`},
+];
+
+let S = { logs:[], tpls:[], cts:{}, q:'', page:1, ps:15, view:'home', editId:null, viewId:null, blks:[] };
+let Auth = { mode:null, userId:null, name:'', isAdmin:false };
+let AppSettings = { logoUrl:'', logoUrlLight:'', logoUrlDark:'' };
+let pendingUploads = [];
+let AI = { open:false, busy:false, messages:[] };
+const AI_PROXY_K = 'cs_v13_ai_proxy_url';
+const AI_TEMP_KEY_K = 'cs_v13_ai_temp_key';
+let db;
+
+function initDB(callback) {
+  if (!window.indexedDB) { if(callback) callback(); return; }
+  const req = indexedDB.open('CS_ImageDB', 1);
+  req.onupgradeneeded = e => {
+    if (!e.target.result.objectStoreNames.contains('images')) {
+      e.target.result.createObjectStore('images', { keyPath: 'id' });
+    }
+  };
+  req.onsuccess = e => { db = e.target.result; if(callback) callback(); };
+  req.onerror = () => { if(callback) callback(); };
+}
+
+const usersRef = () => rtdb.ref(`${FB_ROOT}/users`);
+const userDataRef = () => rtdb.ref(`${FB_ROOT}/userData/${Auth.userId}`);
+const imageRef = id => fbStorage.ref(`${FB_ROOT}/${Auth.userId}/images/${id}`);
+const settingsRef = () => rtdb.ref(`${FB_ROOT}/settings`);
+const logoRef = mode => fbStorage.ref(`${FB_ROOT}/shared/logo/logo_${mode || 'light'}.png`);
+const cleanName = name => (name || '').trim().replace(/\s+/g, ' ');
+const lowerName = name => cleanName(name).toLocaleLowerCase('ko-KR');
+const arr = v => Array.isArray(v) ? v : Object.values(v || {});
+
+function dataURLToBlob(dataUrl){
+  const parts = dataUrl.split(',');
+  const mime = (parts[0].match(/:(.*?);/) || [])[1] || 'image/png';
+  const bin = atob(parts[1] || '');
+  const bytes = new Uint8Array(bin.length);
+  for(let i=0;i<bin.length;i++) bytes[i] = bin.charCodeAt(i);
+  return new Blob([bytes], {type:mime});
+}
+
+function trackUpload(p){
+  pendingUploads.push(p);
+  p.finally(()=>pendingUploads = pendingUploads.filter(x=>x!==p));
+  return p;
+}
+
+async function waitUploads(){
+  if(!pendingUploads.length) return;
+  toast('이미지 업로드 완료를 기다리는 중입니다...');
+  await Promise.allSettled([...pendingUploads]);
+}
+
+async function saveImageToDB(id, src) {
+  if (!Auth.userId || !src) return src || '';
+  if (!src.startsWith('data:')) return src;
+  const snap = await imageRef(id).put(dataURLToBlob(src));
+  return await snap.ref.getDownloadURL();
+}
+
+function loadImageFromDB(id, fallback, callback) {
+  if (fallback && !fallback.startsWith('data:')) { callback(fallback); return; }
+  if (!Auth.userId) { callback(fallback || ''); return; }
+  imageRef(id).getDownloadURL().then(callback).catch(()=>callback(fallback || ''));
+}
+
+function loadLegacyImageFromDB(id, callback) {
+  if (!db) { callback(''); return; }
+  const req = db.transaction('images', 'readonly').objectStore('images').get(id);
+  req.onsuccess = e => callback(e.target.result ? e.target.result.src : '');
+  req.onerror = () => callback('');
+}
+
+async function migrateLocalIfNeeded(){
+  let localLogs = [], localTpls = null, localCts = {};
+  try{
+    localLogs = JSON.parse(localStorage.getItem(SK)||'[]');
+    localTpls = JSON.parse(localStorage.getItem(TK)||'null');
+    localCts = JSON.parse(localStorage.getItem(CK)||'{}');
+  }catch(e){ return; }
+  if(!localLogs.length && !localTpls && !Object.keys(localCts || {}).length) return;
+  if(!confirm('이 브라우저에 기존 로컬 데이터가 있습니다. 현재 사용자 Firebase 저장소로 가져올까요?')) return;
+
+  S.logs = localLogs;
+  S.tpls = localTpls || DEFTPLS;
+  S.cts = localCts || {};
+
+  for (const log of S.logs) {
+    for (const b of (log.blks || [])) {
+      if (b.type === 'image' && !b.content) {
+        const legacySrc = await new Promise(resolve => loadLegacyImageFromDB(b.id, resolve));
+        if (legacySrc) b.content = await saveImageToDB(b.id, legacySrc);
+      }
+    }
+  }
+  await saveS();
+  toast('기존 로컬 데이터를 Firebase로 가져왔습니다.');
+}
+
+async function loadS(){
+  if(!Auth.userId){ S.logs=[]; S.tpls=DEFTPLS; S.cts={}; return; }
+  const snap = await userDataRef().once('value');
+  const data = snap.val();
+  if(data){
+    S.logs = arr(data.logs);
+    S.tpls = arr(data.tpls);
+    S.cts = data.cts || {};
+    if(!S.tpls.length) S.tpls = DEFTPLS;
+  }else{
+    S.logs=[]; S.tpls=DEFTPLS; S.cts={};
+    await migrateLocalIfNeeded();
+    if(!snap.exists()) await saveS();
+  }
+}
+
+async function saveS(){
+  if(!Auth.userId) return;
+  await userDataRef().set({
+    logs:S.logs,
+    tpls:S.tpls,
+    cts:S.cts,
+    updatedAt:firebase.database.ServerValue.TIMESTAMP
+  });
+}
+
+async function findUserByName(name){
+  const n = lowerName(name);
+  const snap = await usersRef().once('value');
+  const users = snap.val() || {};
+  return Object.values(users).find(u => lowerName(u.name) === n && !u.deleted) || null;
+}
+
+function logoUrlForCurrentTheme(){
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  if(isDark) return AppSettings.logoUrlDark || AppSettings.logoUrlLight || AppSettings.logoUrl || '';
+  return AppSettings.logoUrlLight || AppSettings.logoUrl || AppSettings.logoUrlDark || '';
+}
+
+function setHomeLogo(){
+  const img = document.getElementById('home-logo');
+  const fallback = document.getElementById('home-logo-fallback');
+  if(!img || !fallback) return;
+  const url = logoUrlForCurrentTheme();
+  if(url){
+    img.src = url;
+    img.classList.add('show');
+    fallback.style.display = 'none';
+  }else{
+    img.removeAttribute('src');
+    img.classList.remove('show');
+    fallback.style.display = 'block';
+  }
+}
+
+function setSingleAdminLogoPreview(mode, url){
+  const img = document.getElementById('admin-logo-preview-' + mode);
+  const empty = document.getElementById('admin-logo-empty-' + mode);
+  if(!img || !empty) return;
+  if(url){
+    img.src = url;
+    img.classList.add('show');
+    empty.style.display = 'none';
+  }else{
+    img.removeAttribute('src');
+    img.classList.remove('show');
+    empty.style.display = 'inline';
+  }
+}
+
+function setAdminLogoPreview(){
+  setSingleAdminLogoPreview('light', AppSettings.logoUrlLight || AppSettings.logoUrl || '');
+  setSingleAdminLogoPreview('dark', AppSettings.logoUrlDark || '');
+}
+
+async function loadSettings(){
+  const snap = await settingsRef().once('value');
+  AppSettings = { logoUrl:'', logoUrlLight:'', logoUrlDark:'', ...(snap.val() || {}) };
+  setHomeLogo();
+  setAdminLogoPreview();
+}
+
+async function resizeLogoFile(file){
+  const dataUrl = await new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = e => resolve(e.target.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+  const img = await new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = reject;
+    image.src = dataUrl;
+  });
+  const maxW = 520, maxH = 140;
+  const ratio = Math.min(maxW / img.width, maxH / img.height, 1);
+  const w = Math.max(1, Math.round(img.width * ratio));
+  const h = Math.max(1, Math.round(img.height * ratio));
+  const canvas = document.createElement('canvas');
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, w, h);
+  ctx.drawImage(img, 0, 0, w, h);
+  return await new Promise(resolve => canvas.toBlob(resolve, 'image/png', 0.92));
+}
+
+async function handleLogoFile(input, mode='light'){
+  const file = input.files && input.files[0];
+  input.value = '';
+  if(!file) return;
+  if(!Auth.isAdmin){ toast('관리자만 로고를 업로드할 수 있습니다.'); return; }
+  try{
+    toast('로고 업로드 중...');
+    const blob = await resizeLogoFile(file);
+    const snap = await logoRef(mode).put(blob, { contentType:'image/png' });
+    const url = await snap.ref.getDownloadURL();
+    const payload = { logoUpdatedAt:firebase.database.ServerValue.TIMESTAMP };
+    if(mode === 'dark') payload.logoUrlDark = url;
+    else { payload.logoUrlLight = url; payload.logoUrl = url; }
+    await settingsRef().update(payload);
+    Object.assign(AppSettings, payload, mode === 'dark' ? { logoUrlDark:url } : { logoUrlLight:url, logoUrl:url });
+    setHomeLogo();
+    setAdminLogoPreview();
+    toast(mode === 'dark' ? '다크모드 로고가 저장되었습니다.' : '라이트모드 로고가 저장되었습니다.');
+  }catch(err){
+    console.error(err);
+    toast('로고 업로드에 실패했습니다.');
+  }
+}
+
+async function removeLogo(mode='light'){
+  if(!Auth.isAdmin) return;
+  const label = mode === 'dark' ? '다크모드' : '라이트모드';
+  if(!confirm(label + ' 로고를 삭제할까요?')) return;
+  const payload = { logoUpdatedAt:firebase.database.ServerValue.TIMESTAMP };
+  if(mode === 'dark') payload.logoUrlDark = '';
+  else { payload.logoUrlLight = ''; payload.logoUrl = ''; }
+  await settingsRef().update(payload);
+  await logoRef(mode).delete().catch(()=>{});
+  Object.assign(AppSettings, payload);
+  setHomeLogo();
+  setAdminLogoPreview();
+  toast(label + ' 로고를 삭제했습니다.');
+}
+
+function updateAuthUI(){
+  const label = document.getElementById('auth-label');
+  const logoutBtn = document.getElementById('logout-btn');
+  if(!label || !logoutBtn) return;
+  if(Auth.isAdmin) label.textContent = '관리자';
+  else if(Auth.userId) label.textContent = Auth.name;
+  else label.textContent = '';
+  logoutBtn.style.display = (Auth.isAdmin || Auth.userId) ? 'inline-flex' : 'none';
+  updateAIVisibility();
+}
+
+function goHome(skipHist=false){
+  Auth.mode = Auth.mode || null;
+  setV('home', null, skipHist);
+  setHomeLogo();
+  updateAuthUI();
+}
+function goHomeOrDash(){
+  if(Auth.isAdmin) { renderAdmin(); setV('admin'); return; }
+  if(Auth.userId) { goDash(); return; }
+  goHome();
+}
+function showUserLogin(){ setV('user-login'); setTimeout(()=>document.getElementById('login-name')?.focus(), 50); }
+function showAdminLogin(){ setV('admin-login'); setTimeout(()=>document.getElementById('admin-pass')?.focus(), 50); }
+
+async function loginUser(){
+  const name = cleanName(document.getElementById('login-name').value);
+  if(!name){ toast('이름을 입력해주세요.'); return; }
+  toast('사용자 확인 중...');
+  const user = await findUserByName(name);
+  if(!user){ toast('등록되지 않은 사용자입니다. 관리자에게 사용자 추가를 요청해주세요.'); return; }
+  Auth = { mode:'user', userId:user.id, name:user.name, isAdmin:false };
+  sessionStorage.setItem(SESSION_K, JSON.stringify(Auth));
+  updateAuthUI();
+  await loadS();
+  goDash(true);
+  toast(`${Auth.name}님 페이지로 접속했습니다.`);
+}
+
+async function loginAdmin(){
+  const pass = document.getElementById('admin-pass').value;
+  if(pass !== ADMIN_PASSWORD){ toast('관리자 암호가 맞지 않습니다.'); return; }
+  Auth = { mode:'admin', userId:null, name:'관리자', isAdmin:true };
+  sessionStorage.setItem(SESSION_K, JSON.stringify(Auth));
+  updateAuthUI();
+  await renderAdmin();
+  setV('admin', null, true);
+}
+
+function logout(){
+  sessionStorage.removeItem(SESSION_K);
+  Auth = { mode:null, userId:null, name:'', isAdmin:false };
+  S.logs=[]; S.tpls=DEFTPLS; S.cts={}; S.q=''; S.page=1;
+  updateAuthUI();
+  goHome(true);
+}
+
+async function restoreSession(){
+  try{ Auth = JSON.parse(sessionStorage.getItem(SESSION_K)||'null') || Auth; }catch(e){}
+  await loadSettings();
+  updateAuthUI();
+  if(Auth.isAdmin){ await renderAdmin(); setV('admin', null, true); return; }
+  if(Auth.userId){ await loadS(); goDash(true); return; }
+  goHome(true);
+}
+
+function resetAdminForm(){
+  document.getElementById('admin-user-id').value='';
+  document.getElementById('admin-user-name').value='';
+  document.getElementById('admin-user-name').focus();
+}
+
+async function renderAdmin(){
+  if(!Auth.isAdmin) return;
+  setAdminLogoPreview();
+  const snap = await usersRef().once('value');
+  const users = Object.values(snap.val() || {}).filter(u=>!u.deleted).sort((a,b)=>a.name.localeCompare(b.name, 'ko-KR'));
+  const box = document.getElementById('admin-users');
+  if(!box) return;
+  box.innerHTML = users.length ? users.map(u=>`
+    <div class="user-row">
+      <div>
+        <div class="user-name">${esc(u.name)}</div>
+        <div class="user-meta">${u.updatedAt ? new Date(u.updatedAt).toLocaleString('ko-KR') : ''}</div>
+      </div>
+      <div style="display:flex;gap:4px">
+        <button class="btn btn-secondary btn-sm" onclick="editAdminUser('${u.id}')">편집</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteAdminUser('${u.id}')">삭제</button>
+      </div>
+    </div>`).join('') : '<div class="empty"><div class="empty-t">등록된 사용자가 없습니다</div></div>';
+}
+
+async function saveAdminUser(){
+  if(!Auth.isAdmin) return;
+  const id = document.getElementById('admin-user-id').value || uid();
+  const name = cleanName(document.getElementById('admin-user-name').value);
+  if(!name){ toast('사용자 이름을 입력해주세요.'); return; }
+  const exists = await findUserByName(name);
+  if(exists && exists.id !== id){ toast('이미 등록된 이름입니다.'); return; }
+  const prev = (await usersRef().child(id).once('value')).val() || {};
+  await usersRef().child(id).set({
+    id, name, nameLower:lowerName(name),
+    createdAt:prev.createdAt || Date.now(),
+    updatedAt:Date.now(),
+    deleted:false
+  });
+  resetAdminForm();
+  await renderAdmin();
+  toast('사용자를 저장했습니다.');
+}
+
+async function editAdminUser(id){
+  const u = (await usersRef().child(id).once('value')).val();
+  if(!u) return;
+  document.getElementById('admin-user-id').value = u.id;
+  document.getElementById('admin-user-name').value = u.name || '';
+  document.getElementById('admin-user-name').focus();
+}
+
+async function deleteStorageFolder(ref){
+  try{
+    const list = await ref.listAll();
+    await Promise.all(list.items.map(item=>item.delete().catch(()=>{})));
+    await Promise.all(list.prefixes.map(prefix=>deleteStorageFolder(prefix)));
+  }catch(e){}
+}
+
+async function deleteAdminUser(id){
+  const u = (await usersRef().child(id).once('value')).val();
+  if(!u) return;
+  if(!confirm(`${u.name} 사용자를 삭제할까요? 해당 사용자의 글 데이터도 함께 삭제됩니다.`)) return;
+  await usersRef().child(id).remove();
+  await rtdb.ref(`${FB_ROOT}/userData/${id}`).remove();
+  await deleteStorageFolder(fbStorage.ref(`${FB_ROOT}/${id}`));
+  await renderAdmin();
+  toast('사용자를 삭제했습니다.');
+}
+
+async function generatePDF() {
+  toast('PDF 생성 준비 중입니다...');
+
+  // 1. 날짜 문자열 생성 (예: 20260428)
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  const dateStr = `${year}${month}${day}`;
+  
+  // 2. 원래 타이틀 백업 및 파일명용 타이틀 설정
+  const originalTitle = document.title;
+  document.title = `CS_운영_로그_시스템_${dateStr}`;
+
+  // [기존 필터링 로직]
+  const query = (S.q || "").toLowerCase().trim();
+  const logs = S.logs
+    .filter(l => {
+      if (l.deleted) return false;
+      if (!query) return true;
+      return (
+        (l.co && l.co.toLowerCase().includes(query)) ||
+        (l.ttl && l.ttl.toLowerCase().includes(query)) ||
+        (l.mgr && l.mgr.toLowerCase().includes(query))
+      );
+    })
+    .sort((a, b) => (b.date + (b.time || '')).localeCompare(a.date + (a.time || '')));
+
+  if (logs.length === 0) {
+    document.title = originalTitle; // 데이터 없을 시 복구
+    toast('❌ 출력할 데이터가 없습니다.');
+    return;
+  }
+
+  // 3. 인쇄용 컨테이너 생성
+  let printArea = document.getElementById('print-area');
+  if (!printArea) {
+    printArea = document.createElement('div');
+    printArea.id = 'print-area';
+    document.body.appendChild(printArea);
+  }
+
+  const filterSuffix = query ? `<br><small style="font-size:14px; color:var(--g400);">[필터: ${query}]</small>` : '';
+  
+  let html = `
+    <div class="print-cover">
+      <img src="logo.png" alt="logo" style="width: 240px; height: auto; margin-bottom: 24px;">
+      <h1 style="text-align:center;">CS 운영 관리 내용 취합${filterSuffix}</h1>
+      <div style="font-size: 16px; color: var(--sub); font-weight: 500; margin-top: 12px;">(${today()} 기준)</div>
+    </div>
+  `;
+
+  // 4. 각 로그 구성 (기존 루프 유지)
+  for (const l of logs) {
+    let blocksHtml = '';
+    if (l.blks && l.blks.length > 0) {
+      for (const b of l.blks) {
+        if (b.type === 'text') {
+  // esc() 대신 parseInlineCode()를 사용해야 PDF에서도 변환됩니다.
+  blocksHtml += `<div class="p-blk p-txt">${parseInlineCode(b.content || '')}</div>`;
+}		 else if (b.type === 'sql') {
+          blocksHtml += `<div class="p-blk p-sql">${esc(b.content || '')}</div>`;
+        } else if (b.type === 'image') {
+          const imgSrc = await new Promise(resolve => {
+            loadImageFromDB(b.id, '', (src) => resolve(src));
+          });
+          if (imgSrc) {
+            blocksHtml += `<div class="p-blk p-img" style="text-align:center;"><img src="${imgSrc}" alt="첨부이미지"></div>`;
+          }
+        }
+      }
+    } else {
+      blocksHtml = `<div style="color:var(--sub); text-align:center; padding: 40px;">본문 내용이 없습니다.</div>`;
+    }
+
+    html += `
+      <div class="print-page">
+        <div class="p-hdr">
+          <div class="p-title">${esc(l.ttl || '(제목 없음)')}</div>
+          <div class="p-meta">
+            <span><strong>일시:</strong> ${l.date || '-'} ${l.time || ''}</span>
+            <span><strong>고객사:</strong> ${esc(l.co || '-')}</span>
+            <span><strong>담당자:</strong> ${esc(l.mgr || '-')} ${l.ct ? `(${esc(l.ct)})` : ''}</span>
+          </div>
+        </div>
+        <div class="p-body">${blocksHtml}</div>
+      </div>
+    `;
+  }
+
+  printArea.innerHTML = html;
+  
+  // 5. 인쇄 실행 및 복구
+  setTimeout(() => {
+    window.print();
+    
+    // 인쇄창이 호출된 후 타이틀을 다시 원래대로(브라우저 탭 이름) 되돌립니다.
+    document.title = originalTitle;
+    printArea.innerHTML = ''; 
+    toast('PDF 출력이 완료되었습니다.');
+  }, 800);
+}
+
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2);
+const today=()=>new Date().toISOString().slice(0,10);
+const nowT=()=>new Date().toTimeString().slice(0,5);
+const esc=s=>(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const getTodayKr=()=>{const d=new Date(),dy=['일','월','화','수','목','금','토'];return`${d.getFullYear()}년 ${d.getMonth()+1}월 ${d.getDate()}일 (${dy[d.getDay()]})`};
+
+function toast(msg, ms=2200){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),ms);
+}
+
+function initAIResize(){
+  const panel=document.getElementById('ai-panel');
+  const handle=panel?.querySelector('.ai-resize');
+  if(!panel||!handle||handle._bound) return;
+  handle._bound=true;
+  handle.addEventListener('mousedown', e => {
+    e.preventDefault();
+    const startX=e.clientX, startY=e.clientY;
+    const rect=panel.getBoundingClientRect();
+    const startW=rect.width, startH=rect.height;
+    const minW=340, minH=420;
+    const maxW=Math.max(minW, window.innerWidth - 32);
+    const maxH=Math.max(minH, window.innerHeight - 128);
+    function move(ev){
+      const nextW=Math.min(maxW, Math.max(minW, startW + (startX - ev.clientX)));
+      const nextH=Math.min(maxH, Math.max(minH, startH + (startY - ev.clientY)));
+      panel.style.width=nextW+'px';
+      panel.style.height=nextH+'px';
+    }
+    function up(){
+      document.removeEventListener('mousemove', move);
+      document.removeEventListener('mouseup', up);
+    }
+    document.addEventListener('mousemove', move);
+    document.addEventListener('mouseup', up);
+  });
+}
+function updateAIVisibility(){
+  const fab=document.getElementById('ai-fab'), panel=document.getElementById('ai-panel');
+  if(!fab || !panel) return;
+  const show=!!Auth.userId && S.view==='dash';
+  fab.classList.toggle('show', show);
+  if(!show) panel.classList.remove('open');
+}
+
+function toggleAIChat(){
+  const panel=document.getElementById('ai-panel');
+  if(!panel) return;
+  panel.classList.toggle('open');
+  AI.open=panel.classList.contains('open');
+  if(AI.open){
+    initAIChat();
+    setTimeout(()=>document.getElementById('ai-input')?.focus(),50);
+  }
+}
+function closeAIChat(){document.getElementById('ai-panel')?.classList.remove('open');AI.open=false;}
+function initAIChat(){
+  if(!AI.messages.length){
+    AI.messages.push({role:'assistant', content:'안녕하세요. 대시보드의 CS 로그를 바탕으로 요약, 반복 이슈 분석, SQL 검토를 도와드릴게요. 무엇을 확인할까요?'});
+    renderAIMessages();
+  }
+}
+function renderAIContent(text){
+  const source = String(text || '');
+  const parts = [];
+  let last = 0;
+  source.replace(/```([a-zA-Z0-9_-]+)?\n?([\s\S]*?)```/g, (match, lang, code, offset) => {
+    if(offset > last) parts.push({type:'text', value:source.slice(last, offset)});
+    parts.push({type:'code', value:code.replace(/\n$/, ''), lang:lang || ''});
+    last = offset + match.length;
+    return match;
+  });
+  if(last < source.length) parts.push({type:'text', value:source.slice(last)});
+
+  return parts.map(part => {
+    if(part.type === 'code'){
+      const label = part.lang ? `<div style="font-size:11px;color:#CBD5E1;margin-bottom:6px;font-weight:700">${esc(part.lang)}</div>` : '';
+      return `<pre>${label}<code>${esc(part.value)}</code></pre>`;
+    }
+    let safe = esc(part.value);
+    safe = safe.replace(/`([^\n`]+)`/g, '<code>$1</code>');
+    safe = safe.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+    safe = safe.split(/\n{2,}/).map(p => `<p>${p.replace(/\n/g,'<br>')}</p>`).join('');
+    return safe;
+  }).join('');
+}
+function renderAIMessages(){
+  const box=document.getElementById('ai-msgs'); if(!box) return;
+  box.innerHTML=AI.messages.map(m=>`<div class="ai-msg ${m.role==='user'?'user':'bot'} ${m.error?'err':''}">${renderAIContent(m.content)}</div>`).join('');
+  box.scrollTop=box.scrollHeight;
+}
+function askAIQuick(text){document.getElementById('ai-input').value=text;sendAIChat();}
+function handleAIInputKey(e){
+  if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendAIChat();}
+}
+function trimAIText(text, max=AI_MAX_BLOCK_CHARS){
+  return String(text||'').replace(/\s+/g,' ').trim().slice(0,max);
+}
+function extractAITerms(text){
+  return (String(text||'').toLowerCase().match(/[a-z0-9가-힣_]{2,}/g)||[])
+    .filter(w=>!['그리고','관련','분석','요약','질문','확인','알려줘','해줘','현재'].includes(w))
+    .slice(0,12);
+}
+function collectLogText(log, maxChars=AI_MAX_BLOCK_CHARS){
+  const chunks=[];
+  for(const b of (log.blks||[]).slice(0,5)){
+    if(b.type==='sql') chunks.push('[SQL] '+trimAIText(b.content, Math.min(260,maxChars)));
+    else if(b.type==='text') chunks.push(trimAIText(b.content, Math.min(240,maxChars)));
+    else if(b.type==='image') chunks.push('[이미지 첨부]');
+    if(chunks.join(' ').length>=maxChars) break;
+  }
+  return trimAIText(chunks.join(' | '), maxChars);
+}
+function scoreLogForAI(log, terms){
+  const hay=[
+    log.co, log.ttl, log.mgr, log.ct, log.date,
+    (log.blks||[]).map(b=>b.content||'').join(' ')
+  ].join(' ').toLowerCase();
+  let score=0;
+  terms.forEach(t=>{ if(hay.includes(t)) score+=3; });
+  if(log.date===today()) score+=2;
+  if(log.updatedAt) score+=Math.min(2, (Date.now()-log.updatedAt)<1000*60*60*24*7 ? 2 : 0);
+  return score;
+}
+function pickAIContextLogs(userText){
+  const active=S.logs.filter(l=>!l.deleted);
+  const filtered=getFiltered().slice(0,30);
+  const pool=filtered.length ? filtered : active.slice().sort((a,b)=>(b.updatedAt||b.createdAt||0)-(a.updatedAt||a.createdAt||0)).slice(0,30);
+  const terms=extractAITerms(userText);
+  const ranked=pool.map(l=>({log:l, score:scoreLogForAI(l,terms)}))
+    .sort((a,b)=>b.score-a.score || (b.log.updatedAt||b.log.createdAt||0)-(a.log.updatedAt||a.log.createdAt||0));
+  return ranked.slice(0,AI_MAX_CONTEXT_LOGS).map(x=>x.log);
+}
+function buildAIContext(userText=''){
+  const active=S.logs.filter(l=>!l.deleted);
+  const picked=pickAIContextLogs(userText);
+  const summary=[
+    `전체 ${active.length}건 / 오늘 ${active.filter(l=>l.date===today()).length}건 / 전달 ${picked.length}건`,
+    S.q ? `검색어: ${S.q}` : ''
+  ].filter(Boolean).join('\n');
+  const rows=picked.map((l,i)=>{
+    const body=collectLogText(l);
+    return `#${i+1} ${l.date||'-'} ${l.time||''} | ${l.co||'-'} | ${l.ttl||'-'} | ${l.mgr||'-'}\n${body}`;
+  }).join('\n---\n');
+  return (summary+'\n'+rows).slice(0,AI_MAX_CONTEXT_CHARS);
+}
+function aiInstructions(userText=''){
+  return `너는 한국어 CS 운영 로그/SQL 보조 AI다. 아래 컨텍스트만 근거로 간단명료하게 답하라.
+- 모르면 확인 불가라고 말한다.
+- SQL은 위험한 수정/삭제 쿼리 주의사항을 먼저 짚는다.
+- 답변은 기본 5줄 이내, 필요 시 짧은 목록으로 작성한다.
+
+[관련 로그]
+${buildAIContext(userText)}`;
+}
+async function callAIService(userText){
+  const proxy=(AI_PROXY_URL||'').trim();
+  const directKey=(OPENAI_API_KEY||'').trim();
+  const history=AI.messages.filter(m=>!m.error).slice(-AI_MAX_HISTORY_MESSAGES)
+    .map(m=>({role:m.role==='assistant'?'assistant':'user',content:trimAIText(m.content,700)}));
+  history.push({role:'user',content:trimAIText(userText,900)});
+  const payload={
+    model:AI_MODEL,
+    instructions:aiInstructions(userText),
+    input:history,
+    max_output_tokens:AI_MAX_OUTPUT_TOKENS
+  };
+  if(proxy){
+    const res=await fetch(proxy,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+    const data=await res.json().catch(()=>({}));
+    if(!res.ok) throw new Error(data.error?.message||data.message||'AI 프록시 호출에 실패했습니다.');
+    return data.reply||data.output_text||data.message||data.text||extractOpenAIText(data)||'응답을 읽을 수 없습니다.';
+  }
+  if(!directKey){
+    throw new Error('HTML 상단의 OPENAI_API_KEY 값에 API 키를 입력해주세요.');
+  }
+  const res=await fetch('https://api.openai.com/v1/responses',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+directKey},body:JSON.stringify(payload)});
+  const data=await res.json().catch(()=>({}));
+  if(!res.ok) throw new Error(data.error?.message||'OpenAI API 호출에 실패했습니다.');
+  return extractOpenAIText(data)||'응답을 읽을 수 없습니다.';
+}
+function extractOpenAIText(data){
+  if(data.output_text) return data.output_text;
+  if(Array.isArray(data.output)){
+    return data.output.flatMap(o=>Array.isArray(o.content)?o.content:[]).map(c=>c.text||c.output_text||'').filter(Boolean).join('\n').trim();
+  }
+  return '';
+}
+async function sendAIChat(){
+  const input=document.getElementById('ai-input'), btn=document.getElementById('ai-send');
+  const text=(input?.value||'').trim();
+  if(!text||AI.busy) return;
+  input.value='';
+  AI.messages.push({role:'user',content:text});
+  AI.messages.push({role:'assistant',content:'분석 중입니다...'});
+  AI.busy=true; if(btn) btn.disabled=true; renderAIMessages();
+  try{
+    const reply=await callAIService(text);
+    AI.messages[AI.messages.length-1]={role:'assistant',content:reply};
+  }catch(err){
+    AI.messages[AI.messages.length-1]={role:'assistant',content:err.message||'AI 호출 중 오류가 발생했습니다.',error:true};
+  }finally{
+    AI.busy=false; if(btn) btn.disabled=false; renderAIMessages();
+  }
+}
+
+// ── ROUTER & HISTORY (Req 4: 뒤로가기) ──
+function setV(v, id=null, skipHistory=false){
+  document.querySelectorAll('.view').forEach(e=>e.classList.remove('active'));
+  const view = document.getElementById('v-'+v);
+  if(!view){ return; }
+  view.classList.add('active');
+  S.view=v; window.scrollTo(0,0);
+  updateAIVisibility();
+  if(!skipHistory) {
+    const hash = v==='dash' ? '#dash' : (id ? `#${v}/${id}` : `#${v}`);
+    history.pushState({v, id}, '', hash);
+  }
+}
+function requireUser(){
+  if(Auth.userId) return true;
+  toast('먼저 일반 로그인을 해주세요.');
+  goHome(true);
+  return false;
+}
+function goDash(skipHist=false){
+  if (!requireUser()) return;
+  if (!skipHist && S.view === 'edit') {
+    if (!confirm('작성 중인 내용이 저장되지 않을 수 있습니다. 목록으로 이동하시겠습니까?')) return;
+  }
+  setV('dash', null, skipHist);
+  renderDash();
+}
+function goEditor(id, skipHist=false){ if(!requireUser()) return; S.editId=id; setV('edit', id, skipHist); initEditor(id); }
+function goDet(id, skipHist=false){ if(!requireUser()) return; S.viewId=id; setV('det', id, skipHist); renderDet(id); }
+
+window.addEventListener('popstate', e => {
+  if (S.view === 'edit') {
+    if (!confirm('글 작성 중입니다. 저장하지 않고 나가시겠습니까?')) {
+      history.pushState({v: 'edit', id: S.editId}, '', S.editId ? `#edit/${S.editId}` : '#edit');
+      return;
+    }
+  }
+  const st = e.state;
+  if (st) {
+    if(st.v === 'dash') goDash(true);
+    else if(st.v === 'edit') goEditor(st.id, true);
+    else if(st.v === 'det') goDet(st.id, true);
+    else if(st.v === 'admin' && Auth.isAdmin) { renderAdmin(); setV('admin', null, true); }
+    else if(st.v === 'user-login') showUserLogin();
+    else if(st.v === 'admin-login') showAdminLogin();
+    else goHome(true);
+  } else goHome(true);
+});
+
+window.addEventListener('beforeunload', e => {
+  if (S.view === 'edit') { e.preventDefault(); e.returnValue = ''; }
+});
+
+function getFiltered(){
+  const q=S.q.toLowerCase().trim();
+  return S.logs.filter(l=>!l.deleted).filter(l=>!q||(l.co||'').toLowerCase().includes(q)||(l.ttl||'').toLowerCase().includes(q)||(l.mgr||'').toLowerCase().includes(q))
+    .sort((a,b)=>(b.date+b.time||'').localeCompare(a.date+a.time||''));
+}
+
+function renderDash(){
+  const dt=getTodayKr(); document.getElementById('today-lbl').textContent=dt; document.getElementById('hdr-date').textContent=dt;
+  const all=S.logs.filter(l=>!l.deleted);
+  const td=all.filter(l=>l.date===today());
+  const mo=all.filter(l=>l.date&&l.date.startsWith(today().slice(0,7)));
+
+  document.getElementById('sum-cards').innerHTML=`
+    <div class="sum-card c-blue"><div class="sum-lbl">오늘 접수</div><div class="sum-val">${td.length}<span>건</span></div><div class="sum-sub">${today()} 기준</div></div>
+    <div class="sum-card c-orange"><div class="sum-lbl">이번 달 총계</div><div class="sum-val">${mo.length}<span>건</span></div><div class="sum-sub">${today().slice(0,7)} 기준</div></div>
+    <div class="sum-card c-green"><div class="sum-lbl">전체 누적</div><div class="sum-val">${all.length}<span>건</span></div><div class="sum-sub">전체 기간</div></div>`;
+
+  const fl=getFiltered();
+  const tp=Math.max(1,Math.ceil(fl.length/S.ps)); if(S.page>tp) S.page=tp;
+  const st=(S.page-1)*S.ps; const pg=fl.slice(st, st+S.ps);
+  document.getElementById('res-ct').textContent = S.q?`"${S.q}" 검색 결과: ${fl.length}건`:`전체 ${fl.length}건`;
+
+	const tbl=document.getElementById('log-tbl');
+	  if(!pg.length){
+		tbl.innerHTML=`<div class="empty"><div class="empty-ico">📋</div><div class="empty-t">${S.q?'검색 결과가 없습니다':'등록된 CS 로그가 없습니다'}</div><div style="margin-top:10px">${S.q?`<button class="btn btn-ghost btn-sm" onclick="doSearch('')">검색 초기화</button>`:`<button class="btn btn-primary btn-sm" onclick="goEditor(null)">첫 번째 로그 작성</button>`}</div></div>`;
+	  } else {
+		// [Req 3] 테이블 열 너비 조정 적용
+		tbl.innerHTML=`<table>
+		  <thead><tr>
+			<th style="width:50px; text-align:center; text-transform: none;">No.</th>
+			<th style="width:160px">일시</th>
+			<th style="width:160px">고객사</th>
+			<th style="width:400px; resize: horizontal; overflow: hidden;">제목</th> <th style="width:150px">담당자</th> <th style="width:150px; text-align:right;"></th> </tr></thead>
+		  <tbody>
+		  ${pg.map((l,i)=>`<tr onclick="goDet('${l.id}')">
+			<td class="td-no" data-label="No.">${fl.length-st-i}</td>
+			<td data-label="일시" style="font-size:13px">${l.date||''} <span style="color:var(--sub)">${l.time||''}</span></td> <td class="td-co" data-label="고객사"><span class="badge badge-b">${esc(l.co||'-')}</span></td>
+			<td data-label="제목"><span class="ttl-txt">${esc(l.ttl||'(제목 없음)')}</span></td>
+			<td data-label="담당자">${esc(l.mgr||'-')}</td>
+			<td class="td-actions" data-label="관리" style="text-align:right" onclick="event.stopPropagation()">
+			  <div style="display:flex;gap:4px;justify-content:flex-end">
+				<button class="btn btn-ghost btn-sm" onclick="goDet('${l.id}')">보기</button>
+				<button class="btn btn-secondary btn-sm" onclick="goEditor('${l.id}')">수정</button>
+				<button class="btn btn-danger btn-sm" onclick="askDel('${l.id}')">삭제</button>
+			  </div>
+			</td>
+		  </tr>`).join('')}
+		  </tbody></table>`;
+	  }
+  renderPagi(tp);
+}
+
+// ── [추가] 인라인 코드 문법(__텍스트__) 파싱 함수 ──
+function parseInlineCode(str) {
+  if (!str) return '';
+  let s = esc(str);
+  
+  // 개선된 정규식: __ 로 시작해서 __ 로 끝나는 가장 짧은 구간을 찾음 (중간에 _ 있어도 OK)
+  s = s.replace(/__([\s\S]+?)__/g, (match, p1) => {
+    return `<span class="copy-pill" title="클릭하여 복사" onclick="copyPill(this)">${p1}</span>`;
+  });
+  
+  return s.replace(/\n/g, '<br>');
+}
+
+// ── [추가] 코드블럭 클릭 시 클립보드 복사 함수 ──
+function copyPill(el) {
+  const textToCopy = el.innerText;
+  navigator.clipboard.writeText(textToCopy).then(() => {
+    toast(`📋 복사되었습니다: ${textToCopy}`);
+  }).catch(err => {
+    toast('❌ 복사에 실패했습니다.');
+  });
+}
+
+function statCountBy(items, getter){
+  const map={};
+  items.forEach(item=>{
+    const key=(getter(item)||'미입력').toString().trim()||'미입력';
+    map[key]=(map[key]||0)+1;
+  });
+  return Object.entries(map).sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0],'ko'));
+}
+function statTop(list, limit=8){ return list.slice(0,limit); }
+function statPct(value, max){ return max ? Math.max(4, Math.round(value/max*100)) : 0; }
+function statBarRows(list, emptyText='데이터가 없습니다.'){
+  const rows=statTop(list,8);
+  if(!rows.length) return `<div class="stat-empty">${emptyText}</div>`;
+  const max=rows[0][1]||1;
+  return `<div class="stat-bars">${rows.map(([name,count])=>`
+    <div class="stat-row">
+      <div class="stat-name" title="${esc(name)}">${esc(name)}</div>
+      <div class="stat-track"><div class="stat-fill" style="width:${statPct(count,max)}%"></div></div>
+      <div class="stat-count">${count}건</div>
+    </div>`).join('')}</div>`;
+}
+function statMonthKey(date){
+  return /^\d{4}-\d{2}/.test(date||'') ? date.slice(0,7) : '날짜 없음';
+}
+function lastMonths(n=6){
+  const base=new Date();
+  const arr=[];
+  for(let i=n-1;i>=0;i--){
+    const d=new Date(base.getFullYear(), base.getMonth()-i, 1);
+    arr.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`);
+  }
+  return arr;
+}
+function statKeywords(logs){
+  const stop=new Set(['문의','요청','확인','처리','관련','수정','오류','등록','발생','안내','대응','건','및','the','and','sql','select','from','where']);
+  const map={};
+  logs.forEach(l=>{
+    String(l.ttl||'').toLowerCase().match(/[a-z0-9가-힣_]{2,}/g)?.forEach(w=>{
+      if(stop.has(w) || /^\d+$/.test(w)) return;
+      map[w]=(map[w]||0)+1;
+    });
+  });
+  return Object.entries(map).sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0],'ko'));
+}
+function statBlockCounts(logs){
+  let sql=0, img=0, text=0;
+  logs.forEach(l=>(l.blks||[]).forEach(b=>{
+    if(b.type==='sql') sql++;
+    else if(b.type==='image') img++;
+    else if(b.type==='text') text++;
+  }));
+  return {sql,img,text};
+}
+function statWeekday(logs){
+  const names=['일','월','화','수','목','금','토'];
+  const map=Object.fromEntries(names.map(n=>[n,0]));
+  logs.forEach(l=>{
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(l.date||'')) return;
+    const d=new Date(l.date+'T00:00:00');
+    map[names[d.getDay()]]++;
+  });
+  return Object.entries(map).sort((a,b)=>b[1]-a[1]);
+}
+function statTimeZone(logs){
+  const zone={'오전':0,'오후':0,'저녁':0,'시간 없음':0};
+  logs.forEach(l=>{
+    const h=parseInt(String(l.time||'').slice(0,2),10);
+    if(Number.isNaN(h)) zone['시간 없음']++;
+    else if(h<12) zone['오전']++;
+    else if(h<18) zone['오후']++;
+    else zone['저녁']++;
+  });
+  return Object.entries(zone).sort((a,b)=>b[1]-a[1]);
+}
+function statMonthlyChart(logs){
+  const months=lastMonths(6);
+  const counts=Object.fromEntries(months.map(m=>[m,0]));
+  logs.forEach(l=>{ const k=statMonthKey(l.date); if(k in counts) counts[k]++; });
+  const max=Math.max(1,...Object.values(counts));
+  return `<div class="stat-months">${months.map(m=>`
+    <div class="stat-month">
+      <div style="font-size:11px;font-weight:900">${counts[m]}건</div>
+      <div class="stat-month-bar" style="height:${Math.max(5,Math.round(counts[m]/max*92))}%"></div>
+      <div class="stat-month-lbl">${m.slice(5)}월</div>
+    </div>`).join('')}</div>`;
+}
+function renderStats(){
+  const logs=S.logs.filter(l=>!l.deleted);
+  const monthKey=today().slice(0,7);
+  const todayCnt=logs.filter(l=>l.date===today()).length;
+  const monthCnt=logs.filter(l=>l.date&&l.date.startsWith(monthKey)).length;
+  const companies=statCountBy(logs,l=>l.co);
+  const managers=statCountBy(logs,l=>l.mgr);
+  const keywords=statKeywords(logs);
+  const blocks=statBlockCounts(logs);
+  const topCo=companies[0]||['-',0];
+  const topKw=keywords[0]||['-',0];
+  const body=document.getElementById('stats-body');
+  if(!body) return;
+  if(!logs.length){
+    body.innerHTML='<div class="stat-empty">아직 누적된 로그가 없습니다. 글을 작성하면 통계가 자동으로 생성됩니다.</div>';
+    return;
+  }
+  body.innerHTML=`
+    <div class="stat-summary">
+      <div class="stat-mini"><div class="stat-mini-lbl">전체 문의</div><div class="stat-mini-val">${logs.length}건</div><div class="stat-mini-sub">삭제 제외 누적</div></div>
+      <div class="stat-mini"><div class="stat-mini-lbl">이번 달</div><div class="stat-mini-val">${monthCnt}건</div><div class="stat-mini-sub">${monthKey} 기준</div></div>
+      <div class="stat-mini"><div class="stat-mini-lbl">고객사 수</div><div class="stat-mini-val">${companies.length}곳</div><div class="stat-mini-sub">최다 ${esc(topCo[0])} ${topCo[1]}건</div></div>
+      <div class="stat-mini"><div class="stat-mini-lbl">오늘 접수</div><div class="stat-mini-val">${todayCnt}건</div><div class="stat-mini-sub">${today()} 기준</div></div>
+    </div>
+    <div class="stat-grid">
+      <div class="stat-card">
+        <div class="stat-card-h"><div><div class="stat-card-title">고객사별 문의</div><div class="stat-card-sub">문의가 많은 고객사 순위</div></div></div>
+        ${statBarRows(companies,'고객사 데이터가 없습니다.')}
+      </div>
+      <div class="stat-card">
+        <div class="stat-card-h"><div><div class="stat-card-title">제목 키워드</div><div class="stat-card-sub">제목에서 자주 등장한 단어</div></div></div>
+        <div class="stat-tags">${statTop(keywords,18).map(([k,c])=>`<span class="stat-tag">${esc(k)} <b>${c}</b></span>`).join('') || '<div class="stat-empty">키워드 데이터가 없습니다.</div>'}</div>
+      </div>
+      <div class="stat-card wide">
+        <div class="stat-card-h"><div><div class="stat-card-title">최근 6개월 흐름</div><div class="stat-card-sub">월별 접수 건수</div></div></div>
+        ${statMonthlyChart(logs)}
+      </div>
+      <div class="stat-card">
+        <div class="stat-card-h"><div><div class="stat-card-title">담당자별 처리</div><div class="stat-card-sub">담당자 기준 누적 건수</div></div></div>
+        ${statBarRows(managers,'담당자 데이터가 없습니다.')}
+      </div>
+      <div class="stat-card">
+        <div class="stat-card-h"><div><div class="stat-card-title">요일별 문의</div><div class="stat-card-sub">접수일 기준 분포</div></div></div>
+        ${statBarRows(statWeekday(logs),'날짜 데이터가 없습니다.')}
+      </div>
+      <div class="stat-card">
+        <div class="stat-card-h"><div><div class="stat-card-title">시간대별 문의</div><div class="stat-card-sub">등록 시간 기준 분포</div></div></div>
+        ${statBarRows(statTimeZone(logs),'시간 데이터가 없습니다.')}
+      </div>
+      <div class="stat-card">
+        <div class="stat-card-h"><div><div class="stat-card-title">작성 콘텐츠 구성</div><div class="stat-card-sub">블록 타입별 누적 수</div></div></div>
+        ${statBarRows([['텍스트 블록',blocks.text],['SQL 블록',blocks.sql],['이미지 첨부',blocks.img]],'블록 데이터가 없습니다.')}
+      </div>
+    </div>`;
+}
+function openStatsModal(){
+  renderStats();
+  document.getElementById('stats-ov')?.classList.add('open');
+}
+function closeStatsModal(){
+  document.getElementById('stats-ov')?.classList.remove('open');
+}
+
+function renderPagi(tp){
+  const p=document.getElementById('pagi');
+  if(tp<=1){p.innerHTML='';return;}
+  let h=`<button class="pg-btn" onclick="goPage(${S.page-1})" ${S.page===1?'disabled':''}>‹</button>`;
+  const r=2;
+  for(let i=1;i<=tp;i++){
+    if(i===1||i===tp||(i>=S.page-r&&i<=S.page+r)) h+=`<button class="pg-btn ${i===S.page?'act':''}" onclick="goPage(${i})">${i}</button>`;
+    else if(i===S.page-r-1||i===S.page+r+1) h+=`<span style="padding:0 4px;color:var(--sub)">…</span>`;
+  }
+  h+=`<button class="pg-btn" onclick="goPage(${S.page+1})" ${S.page===tp?'disabled':''}>›</button>`;
+  p.innerHTML=h;
+}
+function goPage(p){const f=getFiltered();S.page=Math.max(1,Math.min(p,Math.max(1,Math.ceil(f.length/S.ps))));renderDash();}
+
+// ── [교체] 검색 실행 함수 ──
+function doSearch(val) {
+  // 1. X 버튼 노출 제어
+  const clearBtn = document.getElementById('clear-btn');
+  if (clearBtn) {
+    clearBtn.style.display = val ? 'block' : 'none';
+  }
+
+  // 2. 검색 로직 (변수명을 S.q와 S.page로 통일했습니다)
+  S.q = val.toLowerCase().trim(); 
+  S.page = 1; // 검색 시 1페이지로 이동
+  
+  // 만약 input 값이 외부에서 들어온 경우(X버튼 클릭 등)를 위해 입력창 값 동기화
+  document.getElementById('srch').value = val;
+  
+  renderDash(); 
+}
+
+// ── [추가] X 버튼 클릭 시 호출되는 함수 ──
+function clearSch() {
+  const input = document.getElementById('srch');
+  input.value = '';
+  doSearch('');
+  input.focus();
+}
+function initEditor(id){
+  document.getElementById('ed-lbl').textContent = id?'로그 수정':'새 글 작성';
+  if(id){
+    const l=S.logs.find(x=>x.id===id); if(!l){goDash();return;}
+    document.getElementById('ed-date').value=l.date||today(); document.getElementById('ed-time').value=l.time||nowT();
+    document.getElementById('ed-co').value=l.co||''; document.getElementById('ed-mgr').value=l.mgr||'';
+    document.getElementById('ed-ct').value=l.ct||''; document.getElementById('ed-ttl').value=l.ttl||'';
+    S.blks=l.blks?JSON.parse(JSON.stringify(l.blks)):[];
+  } else {
+    document.getElementById('ed-date').value=today(); document.getElementById('ed-time').value=nowT();
+    document.getElementById('ed-co').value=''; document.getElementById('ed-mgr').value='';
+    document.getElementById('ed-ct').value=''; document.getElementById('ed-ttl').value='';
+    S.blks=[{type:'text',id:uid(),content:''}];
+  }
+  renderBlks();
+}
+
+function renderBlks(){
+  const container = document.getElementById('blk-container');
+  container.innerHTML = S.blks.map((b,i)=>blkHTML(b,i)).join('');
+
+  const blocks = container.querySelectorAll('.blk');
+  blocks.forEach((el, i) => {
+    el.classList.add('edit-blk');
+    el.setAttribute('draggable', 'true');
+    el.ondragstart = (e) => {
+      el.classList.add('dragging');
+      e.dataTransfer.setData('text/plain', i);
+    };
+    el.ondragend = () => el.classList.remove('dragging');
+    el.ondragover = (e) => {
+      e.preventDefault();
+      const dragging = document.querySelector('.dragging');
+      if (dragging && dragging !== el) {
+        const rect = el.getBoundingClientRect();
+        const next = (e.clientY - rect.top) / (rect.bottom - rect.top) > 0.5;
+        container.insertBefore(dragging, next ? el.nextSibling : el);
+      }
+    };
+    el.ondrop = (e) => {
+      e.preventDefault();
+      const fromIndex = parseInt(e.dataTransfer.getData('text/plain'), 10);
+      const toIndex = [...container.children].indexOf(el);
+      if (!Number.isNaN(fromIndex) && fromIndex !== toIndex) {
+        const movedItem = S.blks.splice(fromIndex, 1)[0];
+        S.blks.splice(toIndex, 0, movedItem);
+        renderBlks();
+      }
+    };
+  });
+
+  document.querySelectorAll('#blk-container textarea').forEach(ta=>{
+    ta.style.height='auto';
+    ta.style.height=ta.scrollHeight+'px';
+  });
+
+  document.querySelectorAll('#blk-container .img-blk img').forEach(img => {
+    const blkId = img.id.replace('img-', '');
+    const b = S.blks.find(x => x.id === blkId);
+    loadImageFromDB(blkId, b ? b.content : '', src => img.src = src);
+  });
+}
+
+function blkHTML(b,i){
+  if(b.type==='text') return `<div class="blk" data-i="${i}"><div class="blk-tb"><button class="btn btn-ghost btn-sm btn-icon" onclick="delBlk(${i})" title="삭제">✕</button></div><textarea class="inp" placeholder="내용을 입력하세요..." oninput="updBlk(${i},this.value);this.style.height='auto';this.style.height=this.scrollHeight+'px'" style="min-height:100px;line-height:1.8">${esc(b.content||'')}</textarea></div>`;
+  if(b.type==='sql') return `<div class="blk" data-i="${i}"><div class="blk-tb" style="top:12px"><button class="btn btn-ghost btn-sm btn-icon" onclick="delBlk(${i})" title="삭제">✕</button></div><div class="sql-blk"><div class="sql-hdr"><div class="dots"><div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div></div><div class="sql-lbl">SQL</div><div></div></div><textarea class="inp sql-ta" placeholder="SELECT * FROM table WHERE ..." oninput="updBlk(${i},this.value)">${esc(b.content||'')}</textarea></div></div>`;
+  // 이미지는 IndexedDB에서 비동기로 불러와 src를 채움
+  if(b.type==='image') return `<div class="blk img-blk" data-i="${i}"><div class="blk-tb"><button class="btn btn-danger btn-sm btn-icon" onclick="delBlk(${i})">✕</button></div><img id="img-${b.id}" src="" alt="첨부이미지"></div>`;
+  return '';
+}
+
+function addBlk(type){
+  S.blks.push({type,id:uid(),content:''}); renderBlks();
+  setTimeout(()=>{const items=document.querySelectorAll('#blk-container .blk');const last=items[items.length-1];if(last){const ta=last.querySelector('textarea');if(ta){ta.focus();ta.scrollIntoView({behavior:'smooth',block:'center'});}}},60);
+}
+function delBlk(i){S.blks.splice(i,1);renderBlks();}
+function updBlk(i,v){if(S.blks[i])S.blks[i].content=v;}
+
+async function saveLog(){
+  const co=document.getElementById('ed-co').value.trim(), ttl=document.getElementById('ed-ttl').value.trim(), mgr=document.getElementById('ed-mgr').value.trim();
+  if(!co){toast('고객사를 입력해주세요');return;} if(!ttl){toast('제목을 입력해주세요');return;} if(!mgr){toast('담당자명을 입력해주세요');return;}
+  const ct=document.getElementById('ed-ct').value.trim(), date=document.getElementById('ed-date').value, time=document.getElementById('ed-time').value, now=Date.now();
+  document.querySelectorAll('#blk-container .blk').forEach((el,i)=>{const ta=el.querySelector('textarea');if(ta && S.blks[i]) S.blks[i].content=ta.value;});
+  await waitUploads();
+  if(S.blks.some(b=>b.type==='image' && (!b.content || b.content.startsWith('data:')))){toast('이미지 업로드가 완료되지 않았습니다. 잠시 후 다시 저장해주세요.');return;}
+  if(co && mgr) S.cts[co]={mgr, ct};
+
+  if(S.editId){
+    const idx=S.logs.findIndex(l=>l.id===S.editId);
+    if(idx!==-1) S.logs[idx]={...S.logs[idx],co,ttl,mgr,ct,date,time,blks:JSON.parse(JSON.stringify(S.blks)),updatedAt:now};
+  } else S.logs.push({id:uid(),co,ttl,mgr,ct,date,time,blks:JSON.parse(JSON.stringify(S.blks)),deleted:false,createdAt:now,updatedAt:now});
+
+  await saveS();
+  toast('Firebase에 저장되었습니다');
+  S.view = 'saving_done';
+  goDash();
+}
+
+function parseInlineCode(text){
+  if(!text) return '';
+
+  return esc(text)
+    .replace(/__([^_]+)__/g, (match, p1) => {
+      const safe = p1.replace(/"/g, '&quot;'); // data 속성 깨짐 방지
+      return `<code class="inline-code" data-copy="${safe}">${p1}</code>`;
+    })
+    .replace(/\n/g,'<br>');
+}
+
+function renderDet(id){
+  const l=S.logs.find(x=>x.id===id); if(!l){goDash();return;}
+  window._sqlMap = {};
+  const blksH=(l.blks||[]).map((b,bi)=>{
+    if(b.type==='text') return `<div class="det-blk"><div class="det-txt">${parseInlineCode(b.content||'')}</div></div>`;
+    if(b.type==='sql'){
+      const k='sql_'+bi+'_'+id; window._sqlMap[k]=b.content||'';
+      const hi=typeof hljs!=='undefined'?hljs.highlight(b.content||'',{language:'sql'}).value:esc(b.content||'');
+      return `<div class="det-blk"><div class="sql-blk"><div class="sql-hdr"><div class="dots"><div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div></div><div class="sql-lbl">SQL</div><button class="copy-sql-btn" id="cpb-${k}" onclick="cpSql('${k}')"><svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg> 복사</button></div><div class="sql-preview"><pre style="background:#263247;margin:0"><code class="hljs language-sql" style="background:transparent;display:block;padding:14px 16px;font-size:13px;line-height:1.65">${hi}</code></pre></div></div></div>`;
+    }
+    // 이미지는 IndexedDB에서 비동기로 불러와 src를 채움
+    if(b.type==='image') return `<div class="det-blk"><div class="img-blk"><img id="det-img-${b.id}" src="" alt="첨부이미지"></div></div>`;
+    return '';
+  }).join('');
+
+  document.getElementById('det-content').innerHTML=`
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:22px">
+      <button class="btn btn-ghost btn-sm" onclick="goDash()">목록</button>
+      <div style="margin-left:auto;display:flex;gap:6px"><button class="btn btn-secondary btn-sm" onclick="goEditor('${l.id}')">수정</button><button class="btn btn-danger btn-sm" onclick="askDel('${l.id}')">삭제</button></div>
+    </div>
+    <div class="det-hdr">
+      <div class="det-title">${esc(l.ttl||'(제목 없음)')}</div>
+      <div class="det-meta">
+        <div class="det-mi"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg><strong>${l.date||'-'}</strong> ${l.time||''}</div>
+        <div class="det-mi"><span class="badge badge-b">${esc(l.co||'-')}</span></div>
+        <div class="det-mi"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg><strong>${esc(l.mgr||'-')}</strong>${l.ct?`<span style="color:var(--sub)">· ${esc(l.ct)}</span>`:''}</div>
+        ${l.updatedAt?`<div class="det-mi" style="margin-left:auto"><span style="font-size:11px;color:var(--sub)">최종수정: ${new Date(l.updatedAt).toLocaleString('ko-KR')}</span></div>`:''}
+      </div>
+    </div>
+    ${blksH||`<div class="card" style="text-align:center;padding:40px;color:var(--sub)">본문 내용이 없습니다.</div>`}`;
+    
+  // IndexedDB 이미지 비동기 로딩
+  document.querySelectorAll('#det-content .img-blk img').forEach(img => {
+    const blkId = img.id.replace('det-img-', '');
+    const b = l && l.blks ? l.blks.find(x => x.id === blkId) : null;
+    loadImageFromDB(blkId, b ? b.content : '', src => img.src = src);
+  });
+}
+
+function cpSql(k){
+  const txt=window._sqlMap[k]||'', btn=document.getElementById('cpb-'+k);
+  navigator.clipboard.writeText(txt).then(()=>{
+    btn.innerHTML=`<svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M5 13l4 4L19 7"/></svg> 복사됨`; btn.classList.add('copied'); setTimeout(()=>{btn.innerHTML=`<svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg> 복사`;btn.classList.remove('copied');},2200);
+  }).catch(()=>{
+    const ta=document.createElement('textarea');ta.value=txt;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);
+    btn.classList.add('copied');setTimeout(()=>btn.classList.remove('copied'),2200);
+  });
+}
+
+function openTplModal(){ renderTplModal(); document.getElementById('tpl-ov').classList.add('open'); }
+function closeTplModal(){ document.getElementById('tpl-ov').classList.remove('open'); }
+function openFeatureModal(){ document.getElementById('feature-ov').classList.add('open'); }
+function closeFeatureModal(){ document.getElementById('feature-ov').classList.remove('open'); }
+function renderTplModal(){
+  document.getElementById('tpl-body').innerHTML = S.tpls.length? S.tpls.map(t=>`<div class="tpl-item"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px"><div class="tpl-nm">${esc(t.nm)}</div><div style="display:flex;gap:4px"><button class="btn btn-secondary btn-sm" onclick="insertTpl('${t.id}')">삽입</button><button class="btn btn-ghost btn-sm btn-icon" onclick="delTpl('${t.id}')">✕</button></div></div><div class="tpl-prev">${esc(t.sql)}</div></div>`).join(''):'<div style="text-align:center;padding:32px;color:var(--sub)">등록된 템플릿이 없습니다.</div>';
+}
+function insertTpl(id){const t=S.tpls.find(x=>x.id===id);if(!t)return;S.blks.push({type:'sql',id:uid(),content:t.sql});renderBlks();closeTplModal();toast('📋 SQL 템플릿 삽입됨');setTimeout(()=>{const items=document.querySelectorAll('#blk-container .blk');const last=items[items.length-1];if(last)last.scrollIntoView({behavior:'smooth',block:'center'});},60);}
+async function delTpl(id){S.tpls=S.tpls.filter(t=>t.id!==id);await saveS();renderTplModal();}
+function showAddTpl(){closeTplModal();document.getElementById('tpl-nm').value='';document.getElementById('tpl-sql').value='';document.getElementById('add-tpl-ov').classList.add('open');}
+function closeAddTpl(){document.getElementById('add-tpl-ov').classList.remove('open');}
+async function saveTpl(){const nm=document.getElementById('tpl-nm').value.trim(),sql=document.getElementById('tpl-sql').value.trim();if(!nm||!sql){toast('입력해주세요');return;}S.tpls.push({id:uid(),nm,sql});await saveS();closeAddTpl();openTplModal();toast('저장됨');}
+
+let _acT;
+function acInput(v){const dd=document.getElementById('ac-dd'),fl=v.trim()?COS.filter(c=>c.toLowerCase().includes(v.toLowerCase())).slice(0,18):[];if(!fl.length){dd.classList.remove('open');return;}dd.innerHTML=fl.map(c=>`<div class="ac-item" onclick="selCo('${esc(c)}')">${esc(c)}</div>`).join('');dd.classList.add('open');}
+function acFocus(){const v=document.getElementById('ed-co').value;if(v)acInput(v);}
+function acBlur(){_acT=setTimeout(()=>document.getElementById('ac-dd').classList.remove('open'),200);}
+function selCo(c){clearTimeout(_acT);document.getElementById('ed-co').value=c;document.getElementById('ac-dd').classList.remove('open');if(S.cts[c]){const x=S.cts[c];if(!document.getElementById('ed-mgr').value)document.getElementById('ed-mgr').value=x.mgr||'';if(!document.getElementById('ed-ct').value)document.getElementById('ed-ct').value=x.ct||'';if(x.mgr)toast(`💡 이전 담당자 불러옴`);}}
+
+function handleDrop(e){e.preventDefault();document.getElementById('dz').classList.remove('dov');const f=e.dataTransfer.files[0];if(f&&f.type.startsWith('image/'))procImg(f);}
+function handleImgFile(inp){if(inp.files[0])procImg(inp.files[0]);inp.value='';}
+
+// ── 이미지 저장 시 IndexedDB에 Base64 저장 ──
+function procImg(f){
+  const r=new FileReader();
+  r.onload=e=>{
+    const id = uid();
+    const dataUrl = e.target.result;
+    S.blks.push({type:'image',id:id,content:dataUrl});
+    renderBlks();
+    toast('이미지 업로드 중...');
+    const upload = saveImageToDB(id, dataUrl).then(url=>{
+      const b = S.blks.find(x=>x.id===id);
+      if(b) b.content = url;
+      renderBlks();
+      toast('이미지 추가됨');
+    }).catch(err=>{
+      const idx = S.blks.findIndex(x=>x.id===id);
+      if(idx !== -1) S.blks.splice(idx, 1);
+      renderBlks();
+      toast('이미지 업로드에 실패했습니다.');
+      console.error(err);
+    });
+    trackUpload(upload);
+  };
+  r.readAsDataURL(f);
+}
+
+function formatPhoneNumber(el) {
+  // 1. 숫자만 추출
+  let val = el.value.replace(/[^0-9]/g, "");
+  let res = "";
+
+  // 2. 길이에 따른 하이픈 처리
+  if (val.length < 3) {
+    res = val;
+  } 
+  // 서울 지역번호 (02) 처리
+  else if (val.startsWith("02")) {
+    if (val.length <= 5) { // 02-123
+      res = val.substr(0, 2) + "-" + val.substr(2);
+    } else if (val.length <= 9) { // 02-123-4567
+      res = val.substr(0, 2) + "-" + val.substr(2, 3) + "-" + val.substr(5);
+    } else { // 02-1234-5678
+      res = val.substr(0, 2) + "-" + val.substr(2, 4) + "-" + val.substr(6);
+    }
+  } 
+  // 일반 번호 및 휴대폰 (010, 031, 070 등)
+  else {
+    if (val.length <= 6) { // 010-123
+      res = val.substr(0, 3) + "-" + val.substr(3);
+    } else if (val.length <= 10) { // 010-123-4567, 031-123-4567
+      res = val.substr(0, 3) + "-" + val.substr(3, 3) + "-" + val.substr(6);
+    } else { // 010-1234-5678
+      res = val.substr(0, 3) + "-" + val.substr(3, 4) + "-" + val.substr(7);
+    }
+  }
+
+  // 3. 값 반영
+  el.value = res;
+}
+
+function askDel(id){const l=S.logs.find(x=>x.id===id);if(!l)return;document.getElementById('cfm-body').innerHTML=`<p style="color:var(--sub);margin-bottom:10px">다음 로그를 삭제하시겠습니까?</p><div style="background:var(--g50);padding:11px;border-radius:8px;font-size:13px"><strong>${esc(l.co)}</strong> · ${esc(l.ttl)}</div>`;document.getElementById('cfm-ok').onclick=()=>{doDelLog(id);closeCfm();};document.getElementById('cfm-ov').classList.add('open');}
+function closeCfm(){document.getElementById('cfm-ov').classList.remove('open');}
+async function doDelLog(id){const i=S.logs.findIndex(l=>l.id===id);if(i!==-1){S.logs[i].deleted=true;S.logs[i].deletedAt=Date.now();await saveS();toast('삭제됨');if(S.view==='det')goDash();else renderDash();}}
+
+function toggleDark(){
+  const html=document.documentElement,isDk=html.getAttribute('data-theme')==='dark',next=isDk?'light':'dark';
+  html.setAttribute('data-theme',next);
+  localStorage.setItem(THEME_K,next);
+  document.getElementById('hljs-theme').href=next==='dark'?'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css':'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css';
+  const ico=document.getElementById('dark-ico');
+  if(next==='dark'){
+    ico.setAttribute('fill','none');
+    ico.setAttribute('stroke','currentColor');
+    ico.setAttribute('stroke-width','2');
+    ico.innerHTML='<path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>';
+  }else{
+    ico.setAttribute('fill','currentColor');
+    ico.removeAttribute('stroke');
+    ico.removeAttribute('stroke-width');
+    ico.innerHTML='<path d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>';
+  }
+  setHomeLogo();
+}
+
+function exportCSV(){const fl=getFiltered(),rows=[['번호','날짜','시간','고객사','제목','담당자','연락처','등록일시']];fl.forEach((l,i)=>rows.push([i+1,l.date||'',l.time||'',l.co||'',l.ttl||'',l.mgr||'',l.ct||'',l.createdAt?new Date(l.createdAt).toLocaleString('ko-KR'):'']));const csv=rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');const blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`cs_log_${today()}.csv`;a.click();URL.revokeObjectURL(url);toast('📊 CSV 다운로드 시작');}
+
+async function init(){
+  const th=localStorage.getItem(THEME_K)||'light';document.documentElement.setAttribute('data-theme',th);
+  if(th==='dark'){document.getElementById('hljs-theme').href='https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css';const ico=document.getElementById('dark-ico');ico.setAttribute('fill','none');ico.setAttribute('stroke','currentColor');ico.setAttribute('stroke-width','2');ico.innerHTML='<path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>';}
+  document.getElementById('hdr-date').textContent=getTodayKr();
+
+  initAIResize();
+  initDB(async () => { await restoreSession(); });
+
+  document.addEventListener('keydown',e=>{
+    if((e.ctrlKey||e.metaKey)&&e.key==='s'&&S.view==='edit'){e.preventDefault();saveLog();}
+    if(e.key==='Escape'){closeCfm();closeTplModal();closeAddTpl();closeFeatureModal();closeStatsModal();closeAIChat();}
+    if(e.key==='F2' && S.view==='det' && S.viewId){ e.preventDefault(); goEditor(S.viewId); }
+  });
+
+  document.addEventListener('paste', e => {
+    if (S.view !== 'edit') return;
+    const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.indexOf('image') === 0) {
+        e.preventDefault();
+        const file = items[i].getAsFile();
+        if (file) procImg(file);
+        break;
+      }
+    }
+  });
+
+  document.addEventListener('keydown', e => {
+    const isInput = ['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName) || document.activeElement.isContentEditable;
+    if (!isInput && (e.key === 'q' || e.key === 'Q') && ['dash','home','admin'].includes(S.view)) toggleDark();
+    if (!isInput && (e.key === 'n' || e.key === 'N') && S.view === 'dash') { e.preventDefault(); goEditor(); }
+    if (!isInput && (e.key === 'e' || e.key === 'E') && S.view === 'det' && S.viewId) { e.preventDefault(); goEditor(S.viewId); }
+  });
+
+  document.addEventListener('click', function(e){
+    const el = e.target.closest('.inline-code');
+    if(!el) return;
+    const text = el.dataset.copy;
+    navigator.clipboard.writeText(text).then(()=>{
+      el.classList.add('copied');
+      setTimeout(()=>el.classList.remove('copied'), 1200);
+      toast('복사됨');
+    });
+  });
+}
+window.onload=init;
+</script>
+</body>
+</html>
