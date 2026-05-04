@@ -679,6 +679,123 @@ html[data-theme="dark"] .copy-pill:hover {
   .m-log-actions{grid-template-columns:1fr 1fr 1fr!important}
 }
 
+
+
+/* Mobile editor UX redesign */
+@media(max-width:768px){
+  #v-edit.active{background:var(--bg)}
+  #v-edit .ed-wrap{padding:0 0 96px;margin:0 auto;max-width:560px}
+
+  #v-edit .ed-topbar{
+    position:sticky;top:var(--hh);z-index:90;
+    display:grid!important;grid-template-columns:64px 1fr 88px;align-items:center;gap:6px;
+    margin:0 -10px 12px;padding:10px 10px 9px;
+    background:rgba(249,250,251,.94);backdrop-filter:blur(12px);
+    border-bottom:1px solid var(--border)
+  }
+  [data-theme=dark] #v-edit .ed-topbar{background:rgba(15,17,23,.94)}
+  #v-edit .ed-topbar>div{display:contents!important;width:auto!important}
+  #v-edit .ed-topbar .pg-title{
+    grid-column:2;text-align:center;font-size:18px;font-weight:900;line-height:1.2;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis
+  }
+  #v-edit .ed-topbar>div:first-child .btn{
+    grid-column:1;min-height:34px;height:34px;padding:0 6px;border-radius:10px;
+    background:transparent;color:var(--sub);box-shadow:none;font-size:12px
+  }
+  #v-edit .ed-topbar>div:first-child .btn svg{width:14px;height:14px}
+  #v-edit .ed-topbar>div:last-child .btn-ghost{display:none!important}
+  #v-edit .ed-topbar>div:last-child .btn-primary{
+    grid-column:3;min-height:36px;height:36px;border-radius:11px;padding:0 10px;
+    font-size:12px;font-weight:900;box-shadow:0 7px 18px rgba(49,130,246,.22)
+  }
+  #v-edit .ed-topbar>div:last-child .btn-primary svg{display:none}
+
+  #v-edit .ed-layout{display:block}
+  #v-edit .ed-main{width:100%}
+  #v-edit .ed-main>.card{
+    border-radius:20px;border:1px solid var(--border);box-shadow:var(--sh-sm);
+    padding:16px;margin-bottom:12px;background:var(--card)
+  }
+  #v-edit .ed-main>.card:first-child{padding:16px}
+  #v-edit .meta-grid{gap:10px!important;margin-bottom:10px!important}
+  #v-edit .meta-grid.g3{grid-template-columns:1fr 1fr!important}
+  #v-edit .meta-grid.g3>.fg:nth-child(3){grid-column:1/-1}
+  #v-edit .meta-grid.g2{grid-template-columns:1fr!important}
+  #v-edit .fg{gap:6px}
+  #v-edit .lbl{font-size:11px;letter-spacing:0;text-transform:none;color:var(--sub);font-weight:900}
+  #v-edit .inp{
+    min-height:44px;height:44px;border-radius:14px;background:var(--g50);
+    border:1px solid var(--border);font-size:14px;padding:10px 13px
+  }
+  #v-edit textarea.inp{height:auto;min-height:128px}
+  #v-edit .ac-dd{border-radius:14px}
+
+  #v-edit .ed-main>.card:nth-of-type(2){
+    background:transparent;border:0;box-shadow:none;padding:0;margin-bottom:12px
+  }
+  #v-edit #blk-container{display:flex;flex-direction:column;gap:12px}
+  #v-edit .blk{
+    margin:0;background:var(--card);border:1px solid var(--border);
+    border-radius:20px;box-shadow:var(--sh-sm);padding:14px;overflow:hidden
+  }
+  #v-edit .blk-tb{
+    position:absolute;top:8px;right:8px;opacity:1;margin:0;z-index:5
+  }
+  #v-edit .blk-tb .btn{
+    width:28px;height:28px;min-height:28px;border-radius:50%;padding:0;
+    background:var(--g100);color:var(--sub)
+  }
+  #v-edit .blk>textarea.inp{
+    min-height:150px;background:transparent;border:0;box-shadow:none;
+    padding:22px 4px 4px;border-radius:0;font-size:15px;line-height:1.8
+  }
+  #v-edit .sql-blk{border:0;border-radius:16px;overflow:hidden;background:#263247;margin-top:18px}
+  #v-edit .sql-hdr{padding:9px 12px}
+  #v-edit .sql-ta{
+    min-height:170px!important;height:auto!important;padding:13px!important;
+    font-size:12px!important;background:#263247!important
+  }
+  #v-edit .img-blk{padding:10px;background:var(--card)}
+  #v-edit .img-blk img{border-radius:14px}
+
+  #v-edit .drop-zone{
+    margin-top:12px;border:1.5px dashed var(--border);border-radius:18px;
+    background:var(--card);padding:16px 14px;color:var(--sub)
+  }
+  #v-edit .drop-zone-ico{font-size:22px;margin-bottom:3px}
+  #v-edit .drop-zone div[style*="font-weight"]{font-size:13px!important;margin-bottom:1px!important}
+  #v-edit .drop-zone div[style*="font-size:12px"]{font-size:11px!important}
+
+  #v-edit .ed-side{
+    position:fixed;left:10px;right:10px;bottom:calc(10px + env(safe-area-inset-bottom));
+    z-index:120;width:auto;display:grid!important;grid-template-columns:repeat(4,1fr);
+    gap:7px;padding:8px;border-radius:18px;background:rgba(255,255,255,.96);
+    border:1px solid var(--border);box-shadow:0 10px 28px rgba(15,23,42,.16);
+    overflow:visible;backdrop-filter:blur(14px)
+  }
+  [data-theme=dark] #v-edit .ed-side{background:rgba(26,29,35,.96)}
+  #v-edit .ed-side>div{display:none!important}
+  #v-edit .ed-side .btn{
+    min-width:0;width:100%;height:40px;min-height:40px;padding:0 4px;
+    border-radius:13px;font-size:11px;font-weight:900;line-height:1.15;
+    white-space:normal;text-align:center;justify-content:center
+  }
+  #v-edit .ed-side .btn-ghost{background:var(--g50);border:1px solid var(--border);color:var(--text)}
+  #v-edit .ed-side .btn-primary{box-shadow:0 7px 18px rgba(49,130,246,.24)}
+}
+
+@media(max-width:420px){
+  #v-edit .ed-topbar{grid-template-columns:58px 1fr 78px}
+  #v-edit .ed-topbar .pg-title{font-size:17px}
+  #v-edit .ed-topbar>div:last-child .btn-primary{font-size:11px;padding:0 7px}
+  #v-edit .ed-main>.card{border-radius:18px;padding:14px}
+  #v-edit .meta-grid.g3{grid-template-columns:1fr!important}
+  #v-edit .meta-grid.g3>.fg:nth-child(3){grid-column:auto}
+  #v-edit .ed-side{left:8px;right:8px;gap:6px;padding:7px}
+  #v-edit .ed-side .btn{font-size:10.5px;height:38px;min-height:38px}
+}
+
 </style>
 </head>
 <body>
